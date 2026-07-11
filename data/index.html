@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Control Panel</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 540px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            background: #262626;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        button[onclick*="START_EXPLORE_CONN"] {
+            background-color: #2563eb;
+            color: white;
+        }
+
+        button[onclick*="START_EXPLORE_CONN"]:hover {
+            background-color: #1d4ed8;
+        }
+
+        button[onclick*="STOP_EXPLORE"] {
+            background-color: #dc2626;
+            color: white;
+        }
+
+        button[onclick*="STOP_EXPLORE"]:hover {
+            background-color: #b91c1c;
+        }
+
+        button:active {
+            transform: scale(0.98);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            max-width: 500px;
+            max-height: 500px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+            background-color: #222;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="controls">
+            <button onclick="sendMessage('START_EXPLORE_CONN')">START EXPLORE</button>
+            <button onclick="sendMessage('STOP_EXPLORE')">STOP EXPLORING</button>
+        </div>
+
+        <div class="canvas-wrapper">
+            <canvas width="500" height="500" id="canvasMap"></canvas>
+        </div>
+
+        <h5>Selected coordinates: </h5>
+        <p id="selCoord"></p>
+        <button id="goToCoord" onclick="sendCoords()" disabled>Go there</button>
+
+        <h3 id="messFromEsp">
+            </p>
+    </div>
+
+    <script>
+        const UNKNOWN = 0;
+        const SET_TARGET = 1;
+        const START_EXPLORE_CONN = 2;
+        const STOP_EXPLORE = 3;
+
+        window.onload = (event) => {
+            receiveMap();
+            //receiveMess();
+        };
+
+        const map = new Map();
+
+        async function receiveMap() {
+            try {
+                const response = await fetch('/api/getMap');
+                const buffer = await response.arrayBuffer(); // Tutto il binario ricevuto
+                const view = new DataView(buffer);
+
+                let offset = 0;
+                while (offset < buffer.byteLength) {
+                    // Primi 4 byte sono per le coordinate
+                    const chunkX = view.getInt16(offset, true);
+                    const chunkY = view.getInt16(offset + 2, true);
+                    offset += 4;
+
+                    // 256 byte successivi per i valori delle celle
+                    const cells = new Uint8Array(buffer, offset, 256);
+                    offset += 256;
+
+                    map.set(`${chunkX}, ${chunkY}`, cells);
+
+                }
+
+                console.log("Map received, drawing it...");
+                drawMap();
+            } catch (error) {
+                console.error("Connection error: ", error);
+            } finally {
+                setTimeout(receiveMap, 500); // Aggiorno 500ms dopo aver finito di ricevere
+            }
+        }
+
+        async function sendMessage(messType, body = {}) {
+            try {
+                const res = await fetch('/api/sendMessageToEsp', {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        messageType: messType,
+                        body: body
+                    })
+                });
+
+                const result = await res.text();
+                console.log("Response: ", result);
+            } catch (error) {
+                console.error("Error sending message: ", error)
+            }
+        }
+
+        let scaleChunk;
+        function drawMap() {
+            // Trovare coordinate minime e massime
+            // Calcolare la scala
+            // Calcolare centro geometrico della mappa e arrotondare per avere numeri interi
+            // Calcolare centro geometrico canvas e arrotondare per avere numeri interi
+            // Trovare differenza x e y tra i centri e sommare quei valori a tutte le coordinate della mappa
+            // Ora che ho le coordinate uso la scala per decidere le dimensioni di ogni cella e le disegno (e ribatare la y per vederlo nel verso corretto)
+
+            const canvas = document.getElementById('canvasMap');
+            const ctx = canvas.getContext("2d");
+            const cw = canvas.width;
+            const ch = canvas.height;
+
+            ctx.clearRect(0, 0, cw, ch);
+            ctx.fillStyle = "#222";
+            ctx.fillRect(0, 0, cw, ch);
+
+            let minChunkX = Infinity, maxChunkX = -Infinity;
+            let minChunkY = Infinity, maxChunkY = -Infinity;
+
+            
+
+            for (let [c, cells] of map) {
+                const [chunkX, chunkY] = c.split(", ").map(Number);
+
+                if (chunkX > maxChunkX) {
+                    maxChunkX = chunkX;
+                }
+                if (chunkX < minChunkX) {
+                    minChunkX = chunkX;
+                }
+
+                if (chunkY > maxChunkY) {
+                    maxChunkY = chunkY;
+                }
+                if (chunkY < minChunkY) {
+                    minChunkY = chunkY;
+                }
+            }
+
+            let deltaX = (maxChunkX - minChunkX) + 1;
+            let deltaY = (maxChunkY - minChunkY) + 1;
+
+            scaleChunk = Math.min(cw / deltaX, ch / deltaY); // calcola a quanti px corrisponde un chunk (minimo perché altrimenti potrebbe tagliare una parte di mappa: se è più alta che larga ci saranno più celle nel deltaY, quindi ch / deltaY sarà minore)
+
+            let centerMapX = deltaX / 2 + minChunkX;
+            let centerMapY = deltaY / 2 + minChunkY;
+
+            let centerCanvasX = cw / 2;
+            let centerCanvasY = ch / 2;
+
+            for (let [c, cells] of map) {
+                // Trovo quanto dista il chunk corrente dal centro della mappa, moltiplico per la scala per trovare la dimensione in pixel e poi sommo il centro del canvas per centrare la mappa nel canvas
+                // offests corrispondono alle coordinate canvas del primo pixel in alto a sinistra di ogni chunk
+
+                const [chunkX, chunkY] = c.split(", ").map(Number);
+
+                let offsetX = (chunkX - centerMapX) * scaleChunk + centerCanvasX;
+                let offsetY = centerCanvasY - (chunkY + 1 - centerMapY) * scaleChunk; // Nel canvas la y è maggiore verso il basso, il contrario della logica usata nella mappa
+
+                let cellDim = scaleChunk / 16;
+
+                for (let i = 0; i < 16; i++) { // righe (Y)
+                    for (let j = 0; j < 16; j++) { // colonne (X)
+
+                        let cellIndex = i * 16 + j;
+                        
+                        let coordX = j * cellDim + offsetX;
+                        let coordY = (15 - i) * cellDim + offsetY;
+
+                        ctx.fillStyle = getColor(cells[cellIndex]);
+                        ctx.fillRect(coordX, coordY, cellDim, cellDim);
+                    }
+                }
+
+            }
+        }
+
+        function getColor(val) {
+            // nero = ostacolo; bianco = libero; grigio = valore iniziale
+            let grad = (255 - val).toString(16).padStart(2, '0');
+            return `#${grad}${grad}${grad}`;
+        }
+
+
+        function getMousePosition(canvas, event) {
+            //TODO aggiustare, pixel in alto a sinistra NON è 0; 0
+
+            // if (!scaleChunk) {
+            //     return;
+            // }
+            // let rect = canvas.getBoundingClientRect();
+            // let x = Math.floor((event.clientX - rect.left) / (scaleChunk / 16));
+            // let y = Math.floor((event.clientY - rect.top) / (scaleChunk / 16));
+
+            // let textCoord = document.getElementById("selCoord");
+            // textCoord.textContent = `${x}; ${y}`;
+            // document.getElementById("goToCoord").disabled = false;
+
+        }
+
+        function sendCoords() {
+            document.getElementById("goToCoord").disabled = true;
+            let parts = document.getElementById("selCoord").textContent.split("; ");
+
+            let x = parseInt(parts[0]);
+            let y = parseInt(parts[1]);
+
+            sendMessage("SET_TARGET", { x: x, y: y });
+        }
+
+        let canvasElem = document.getElementById("canvasMap");
+
+        canvasElem.addEventListener("mousedown", function (e) {
+            getMousePosition(canvasElem, e);
+        });
+
+    </script>
+</body>
+
+</html>
