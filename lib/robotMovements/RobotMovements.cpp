@@ -260,8 +260,18 @@ void RobotMovements::followPath()
     bool isDiagonal = _currentRoute.route[_currIndexRoute + 1].x != _currentRoute.route[_currIndexRoute].x && _currentRoute.route[_currIndexRoute + 1].y != _currentRoute.route[_currIndexRoute].y;
     float straightDis = 0;
 
-    for (int i = _currIndexRoute; i < _currentRoute.route.size() - 1; i++)
+    std::cout << "Before for in followPath() rb: " << "_currIndexRoute: " << _currIndexRoute << " _currentRoute.route.size(): " << _currentRoute.route.size() << std::endl;
+    for (int i = _currIndexRoute; i < _currentRoute.route.size(); i++)
     {
+        // TODO Sistemare 
+
+        if (i == _currentRoute.route.size() - 1)
+        {
+            _currIndexRoute++;
+            straightDis += isDiagonal ? 1.4142135f : 1.0f;
+            break;
+        }
+
         std::cout << "_currIndexRoute in for in followPath() rb before incrementing: " << _currIndexRoute << std::endl;
 
         double absAngleS = atan2(_currentRoute.route[i + 1].y - _currentRoute.route[i].y, _currentRoute.route[i + 1].x - _currentRoute.route[i].x);
@@ -272,7 +282,6 @@ void RobotMovements::followPath()
         if (abs(diffStart) > 0.1)
         {
             std::cout << "Found an angle at: " << _currentRoute.route[i].y << ":" << _currentRoute.route[i].x << std::endl;
-
             break;
         }
 
