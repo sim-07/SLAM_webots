@@ -80,17 +80,27 @@ void Explorer::update()
 
     case MOVE_TO_FRONTIER:
     {
-        if (_bordersToExplore.empty()) {
-            findBorder();
-        }
 
         while (true)
         {
-            Pos closestBorder = findClosestBorder();
+            if (_bordersToExplore.empty())
+            {
+                std::cout << "_bordersToExplore empty, finding other borders..." << std::endl;
+                findBorder();
+
+                if (_bordersToExplore.empty())
+                {
+                    std::cout << "No frontier left" << std::endl;
+                    break;
+                }
+            }
+
+            Pos closestBorder = findClosestBorder(_nav->getPos());
             deleteBorder(closestBorder);
 
             if (closestBorder.x == _nav->getPos().x && closestBorder.y == _nav->getPos().y)
             {
+                std::cout << "closestBorder.x == _nav->getPos().x && closestBorder.y == _nav->getPos().y" << std::endl;
                 Route r;
                 r.numSteps = 1;
                 r.turnAngle = 3.1415;
@@ -125,21 +135,24 @@ void Explorer::update()
                 _rb->setCurrentState(FOLLOWING);
                 setCurrentState(FOLLOWING_F);
                 return;
-            }
-
-            if (_bordersToExplore.size() == 0 || _bordersExplored >= MAX_BORDERS_TO_EXPLORE)
-            {
-                std::cout << "hit MAX_BORDERS_TO_EXPLORE" << std::endl;
+            } else if (_bordersToExplore.size() == 0) {
+                std::cout << "_bordersToExplore.size() == 0" << std::endl;
                 break;
             }
+
         }
 
         std::cout << "No frontier left, return home: _firstPos.x: " << _firstPos.x << " _firstPos.y: " << _firstPos.y << std::endl;
 
         Route rHome = _nav->calcRoute(_firstPos.x, _firstPos.y);
+        if (rHome.numSteps == -1)
+        {
+            std::cout << "Can't go home" << std::endl;
+        }
         setCurrentState(COMPLETED);
         _rb->setRoute(rHome);
         _rb->setCurrentState(FOLLOWING);
+        return;
     }
     break;
 
@@ -283,10 +296,10 @@ void Explorer::findBorder()
     mapOpenList.push_front({currX, currY}); // Inserisco come primo valore la posizione corrente
     // mapClosedList.insert({currX, currY});
 
-    if (mapOpenList.empty())
-    {
-        std::cout << "mapOpenList empty" << std::endl;
-    }
+    // if (mapOpenList.empty())
+    // {
+    //     std::cout << "mapOpenList empty" << std::endl;
+    // }
 
     while (!mapOpenList.empty())
     {
@@ -308,8 +321,6 @@ void Explorer::findBorder()
         Pos currAnalyzedCell = mapOpenList.front();
         mapOpenList.pop_front();
 
-        // std::cout << "Analyzing cell: " << currAnalyzedCell.x << ":" << currAnalyzedCell.y << std::endl;
-
         for (uint8_t i = 0; i < 8; i++)
         {
             int16_t nX = currAnalyzedCell.x + dX[i]; // Coordinate da analizzare
@@ -319,6 +330,8 @@ void Explorer::findBorder()
             { // Se l'ho già vista e scartata passo oltre
                 continue;
             }
+
+            // std::cout << "Currently analyzing in findBorder(): " << nX << ":" << nY << std::endl;
 
             Pos chunkPos = _nav->getChunkPos(nX, nY);
             int16_t index = _nav->getPosIndex(nX, nY);
@@ -333,20 +346,14 @@ void Explorer::findBorder()
             {
                 const Chunk &chunk = it->second; // Chunk in cui si trova la cella analizzata
 
-                if (chunk.cells[index] > _nav->THRESHOLD_OBSTACLE)
-                { // Se è un ostacolo lo metto in closedlist
-                    mapClosedList.insert({nX, nY});
-                }
-                else if (chunk.cells[index] < _nav->THRESHOLD_OBSTACLE)
+                if (chunk.cells[index] > _nav->THRESHOLD_OBSTACLE && chunk.cells[index] != DEFAULT_VAL)
                 { // Se è libero va in openlist
+                    // std::cout << "It's free" << std::endl;
                     mapOpenList.push_back({nX, nY});
-                    mapClosedList.insert({nX, nY}); // Inutile scansionarla di nuovo, verranno scansionate le celle adiacenti ad essa
                 }
                 else if (chunk.cells[index] == DEFAULT_VAL)
                 { // Cella sconosciuta, trovata possibile frontiera
-
-                    std::cout << "Found possible frontier, but still not 3: " << nX << ":" << nY << std::endl;
-
+                    // std::cout << "It's unknown" << std::endl;
                     uint8_t countFrontier = 0;
                     for (uint8_t j = 0; j < 8; j++)
                     { // Analizzo celle adiacenti a quella sconosciuta
@@ -371,16 +378,18 @@ void Explorer::findBorder()
                     if (countFrontier >= 3)
                     {
                         // Se ci sono almeno 3 celle sconosciute adiacenti è una frontiera, restituisco il percorso
-                        std::cout << "Found possible frontier, 3 unkown: " << nX << ":" << nY << std::endl;
+                        //std::cout << "Found frontier: " << nX << ":" << nY << std::endl;
                         isFrontierFound = true;
                         foundBorder = {nX, nY};
                     }
                 }
+
+                mapClosedList.insert({nX, nY});
             }
             else
             {
                 // il chunk della cella analizzata è sconosciuto, sicuramente è una frontiera
-                std::cout << "Found sure frontier: " << currAnalyzedCell.x << ":" << currAnalyzedCell.y << std::endl;
+                std::cout << "Chunk does NOT exists, found sure frontier: " << currAnalyzedCell.x << ":" << currAnalyzedCell.y << std::endl;
 
                 mapClosedList.insert({nX, nY});
                 mapClosedList.insert({currAnalyzedCell.x, currAnalyzedCell.y});
@@ -391,7 +400,21 @@ void Explorer::findBorder()
 
             if (isFrontierFound)
             {
-                // TODO controllare non sia troppo vicina alle altre
+                if (!_bordersToExplore.empty())
+                {
+                    Pos closBorder = findClosestBorder(foundBorder);
+                    int distance = _nav->calcDistanceBetween(closBorder, foundBorder);
+                    if (distance < 40)
+                    {
+                        // std::cout << "Distance too short (" << distance
+                        //           << ") between last border (" << closBorder.x << ":" << closBorder.y
+                        //           << ") and new border (" << foundBorder.x << ":" << foundBorder.y << ")"
+                        //           << std::endl;
+                        continue;
+                    }
+                }
+
+                std::cout << "Inserting in _bordesToexplore: " << foundBorder.x << ":" << foundBorder.y << std::endl;
                 _bordersToExplore.push_back(foundBorder);
 
                 if (_bordersToExplore.size() >= MAX_BORDERS_FOUND)
@@ -406,12 +429,13 @@ void Explorer::findBorder()
     return;
 }
 
-Pos Explorer::findClosestBorder()
+Pos Explorer::findClosestBorder(Pos currPos)
 {
-    Pos currPos = _nav->getPos();
 
-    // while (true)
-    // {
+    if (_bordersToExplore.empty())
+    {
+        return {32767, 32767};
+    }
 
     Pos closestBorder = _bordersToExplore.front();
 

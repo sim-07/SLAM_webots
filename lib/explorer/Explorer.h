@@ -13,10 +13,7 @@
 #include <set>
 
 static const double SCAN_PRECISION = 0.0872; // ogni quanti gradi scansiona
-static const int MAX_BORDERS_FOUND = 10;
-static const int MAX_BORDERS_TO_EXPLORE = 10;
-
-
+static const int MAX_BORDERS_FOUND = 15;
 
 enum ExpState
 {
@@ -43,7 +40,7 @@ private:
     void scan();
     double normAngle(double angle);
     void findBorder();
-    Pos findClosestBorder();
+    Pos findClosestBorder(Pos currPos);
     Pos calcCoordinates(Pos currPos, float dis, double servoAngle);
 
     void deleteBorder(Pos closestBorder);
@@ -58,7 +55,7 @@ private:
 
     ExpState _currentState = IDLE;
 
-    std::vector<Pos> _bordersToExplore;
+    std::vector<Pos> _bordersToExplore = {{0, 0}}; // Cella iniziale messa come sconosciuta, così all'inizio farà una scansione a 360 gradi (si gira su se stesso se la frontiera ha e stesse coordinate della posizione corrente)
 
     volatile bool _scanning = false;
     double _currScanPoint;
@@ -67,7 +64,7 @@ private:
     int _delay = 0;
     int _bordersExplored = 0;
     DelayState _currDelayState;
-   
+
 public:
     void init(Navigator *n, RobotMovements *r, ServoMotor *s, LaserSensor *l, Ultrasonic *u);
     void explore(Navigator &nav);

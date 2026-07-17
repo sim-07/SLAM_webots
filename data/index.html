@@ -260,7 +260,7 @@
 
         function getColor(val) {
             // nero = ostacolo; bianco = libero; grigio = valore iniziale
-            let grad = (255 - val).toString(16).padStart(2, '0');
+            let grad = val.toString(16).padStart(2, '0');
             return `#${grad}${grad}${grad}`;
         }
 

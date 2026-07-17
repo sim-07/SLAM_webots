@@ -9,6 +9,7 @@
 #include <cstring>
 
 inline constexpr uint8_t DEFAULT_VAL = 128;
+inline constexpr int CHUNK_DIM = 256;
 
 struct Pos
 {
@@ -27,7 +28,7 @@ struct Pos
 };
 
 struct Chunk {
-    uint8_t cells[256]; // TODO: ogni cella ne continene 2. Doppie celle con la stessa memoria. 
+    uint8_t cells[CHUNK_DIM]; // TODO: ogni cella ne continene 2. Doppie celle con la stessa memoria. 
 
     Chunk() {
         memset(cells, DEFAULT_VAL, sizeof(cells));
@@ -71,18 +72,17 @@ public:
 		LASER = 1,
 	};
 	static const uint8_t CELL_CM = 10;
-	static const int CHUNK_DIM = 256;
 	static const uint8_t CHUNK_WIDTH = 16;
 	static const uint8_t ULTRASONIC_A = 10;
-	static const uint8_t LASER_A = 20;
-	static const uint8_t BLANK_A = 20;
+	static const uint8_t LASER_A = 40;
+	static const uint8_t BLANK_A = 40;
 	static const uint8_t THRESHOLD_OBSTACLE = DEFAULT_VAL - LASER_A;
 
 	Navigator();
 
 	Pos getPos() { return _currPos; }
 	Route calcRoute(int16_t x, int16_t y);
-	double calcDistanceBetween(Pos start, Pos dest);
+	int calcDistanceBetween(Pos start, Pos dest);
 	static int16_t getPosIndex(int16_t x, int16_t y);
 	static Pos getChunkPos(int16_t x, int16_t y);
 

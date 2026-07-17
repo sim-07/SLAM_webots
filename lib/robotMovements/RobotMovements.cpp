@@ -89,10 +89,10 @@ void RobotMovements::setCurrentState(RbState currState)
 
 void RobotMovements::goStraight()
 {
-    std::cout << "Inside goStraight() rb. _targetDis: " << _targetDis << std::endl;
 
     if (_avgStraight < abs(_targetDis))
     {
+        std::cout << "Moving forward in rb: _avgStraight: " << _avgStraight << " abs(_targetDis): " << abs(_targetDis) << std::endl;
         float dL = abs(_leftEnc->getCurrDistance());
         float dR = abs(_rightEnc->getCurrDistance());
 
@@ -115,6 +115,7 @@ void RobotMovements::goStraight()
     }
     else
     {
+        std::cout << "Finished moving forward" << std::endl;
         stop();
         _leftEnc->reset();
         _rightEnc->reset();
@@ -139,7 +140,7 @@ void RobotMovements::turn()
 
     if (_avgTurn < turnDis)
     {
-        std::cout << "Turning in rb: _avgTurn: " << _avgTurn << " turnDis " << turnDis << std::endl;
+        std::cout << "Turning in rb: _avgTurn: " << _avgTurn << " turnDis: " << turnDis << std::endl;
 
         float abs_dis_l = abs(_leftEnc->getCurrDistance());
         float abs_dis_r = abs(_rightEnc->getCurrDistance());
@@ -217,6 +218,13 @@ void RobotMovements::followPath()
         }
     }
 
+    // if (_nav->getPos().x == _currentRoute.route[_currentRoute.route.size() - 1].x && _nav->getPos().y == _currentRoute.route[_currentRoute.route.size() - 1].y) {
+    //     std::cout << "Completed route rb" << std::endl;
+    //     std::cout << "COMPLETED_ROUTE" << std::endl;
+    //     setCurrentState(COMPLETED_ROUTE);
+    //     return;
+    // }
+
     if (_currentRoute.route.size() > _currIndexRoute)
     {
         _nextCell = _currentRoute.route[_currIndexRoute];
@@ -257,47 +265,46 @@ void RobotMovements::followPath()
     }
 
     // va dritto finché non c'è una curva
-    bool isDiagonal = _currentRoute.route[_currIndexRoute + 1].x != _currentRoute.route[_currIndexRoute].x && _currentRoute.route[_currIndexRoute + 1].y != _currentRoute.route[_currIndexRoute].y;
+    bool isDiagonal = _nextCell.x != currPos.x && _nextCell.y != currPos.y;
     float straightDis = 0;
 
     std::cout << "Before for in followPath() rb: " << "_currIndexRoute: " << _currIndexRoute << " _currentRoute.route.size(): " << _currentRoute.route.size() << std::endl;
+
     for (int i = _currIndexRoute; i < _currentRoute.route.size(); i++)
     {
-        // TODO Sistemare 
+        // TODO Sistemare
+
+        _currIndexRoute = i;
 
         if (i == _currentRoute.route.size() - 1)
         {
-            _currIndexRoute++;
             straightDis += isDiagonal ? 1.4142135f : 1.0f;
             break;
         }
-
-        std::cout << "_currIndexRoute in for in followPath() rb before incrementing: " << _currIndexRoute << std::endl;
 
         double absAngleS = atan2(_currentRoute.route[i + 1].y - _currentRoute.route[i].y, _currentRoute.route[i + 1].x - _currentRoute.route[i].x);
         double diffStart = absAngleS - absAngle; // quanto cambia in base all'inizio (se è dritto l'angolo rimane lo stesso per tutto il tragitto)
 
         diffStart = normAngle(diffStart);
 
+        straightDis += isDiagonal ? 1.4142135f : 1.0f;
+
         if (abs(diffStart) > 0.1)
         {
-            std::cout << "Found an angle at: " << _currentRoute.route[i].y << ":" << _currentRoute.route[i].x << std::endl;
+            std::cout << "Found an angle at: " << _currentRoute.route[i].x << ":" << _currentRoute.route[i].y << std::endl;
+
             break;
         }
-
-        straightDis += isDiagonal ? 1.4142135f : 1.0f;
-        std::cout << "straightDis is (end of followPath() in rb): " << straightDis << std::endl;
-
-        _currIndexRoute++;
     }
 
     _leftEnc->reset();
     _rightEnc->reset();
     _avgStraight = 0;
     _targetDis = straightDis * UNIT;
-    setCurrentState(MOVING_STRAIGHT);
 
-    std::cout << "_targetDis is (end of followPath() in rb): " << _targetDis << std::endl;
+    std::cout << "Moving forward, _targetDis: " << _targetDis << std::endl;
+
+    setCurrentState(MOVING_STRAIGHT);
 
     return;
 }

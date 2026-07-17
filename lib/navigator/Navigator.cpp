@@ -30,7 +30,7 @@ void Navigator::setDir(double rad)
 
 void Navigator::setCurrPos(int16_t x, int16_t y)
 {
-    std::cout << "Current position set in nav: " << x << ":" << y << std::endl;
+    std::cout << "Current position in nav set to: " << x << ":" << y << std::endl;
     _currPos = {x, y};
 }
 
@@ -46,7 +46,7 @@ bool Navigator::isFree(int16_t x, int16_t y)
     }
 
     int16_t cellIndex = getPosIndex(x, y);
-    bool free = it->second.cells[cellIndex] < THRESHOLD_OBSTACLE;
+    bool free = it->second.cells[cellIndex] > DEFAULT_VAL;
 
     return free;
 }
@@ -89,29 +89,32 @@ void Navigator::sculpt(int16_t targetX, int16_t targetY, SensorType st)
 
     createBlanks(targetX, targetY);
 
-    int dX[] = {-1, 1, 0, 0, 0, -1, -1, 1, 1};
-    int dY[] = {0, 0, 1, -1, 0, 1, -1, 1, -1};
-    int padding = 9;
+    int p = 2;
+    int xMax = targetX + p;
+    int xMin = targetX - p;
+    int yMax = targetY + p;
+    int yMin = targetY - p;
 
-    for (int k = 0; k < padding; k++)
+    for (int i = xMin; i <= xMax; i++)
     {
-        int16_t nX = targetX + dX[k];
-        int16_t nY = targetY + dY[k];
-
-        Pos cPos = getChunkPos(nX, nY);
-        int16_t cellIndex = getPosIndex(nX, nY);
-
-        Chunk &currChunk = _map[cPos];
-
-        if (currChunk.cells[cellIndex] + v > 255)
+        for (int j = yMin; j <= yMax; j++)
         {
-            currChunk.cells[cellIndex] = 255;
-        }
-        else
-        {
-            currChunk.cells[cellIndex] += v;
+            Pos cPos = getChunkPos(i, j);
+            int16_t cellIndex = getPosIndex(i, j);
+
+            Chunk &currChunk = _map[cPos];
+
+            if (currChunk.cells[cellIndex] - v <= 0)
+            {
+                currChunk.cells[cellIndex] = 0;
+            }
+            else
+            {
+                currChunk.cells[cellIndex] -= v;
+            }
         }
     }
+
 }
 
 Route Navigator::calcRoute(int16_t dest_x, int16_t dest_y)
@@ -124,9 +127,82 @@ Route Navigator::calcRoute(int16_t dest_x, int16_t dest_y)
 }
 
 // Bresenham
+// void Navigator::createBlanks(int16_t targetX, int16_t targetY)
+// {
+//     // TODO potrebbe essere necessario mettere un padding anche agli spazi liberi
+//     Pos chunkCurrPos = getChunkPos(getPos().x, getPos().y);
+//     Pos chunkDestPos = getChunkPos(targetX, targetY);
+//     int16_t cellIndex = getPosIndex(targetX, targetY);
+
+//     int16_t x0 = getPos().x;
+//     int16_t y0 = getPos().y;
+//     int16_t x1 = targetX;
+//     int16_t y1 = targetY;
+
+//     // delta x e y
+//     int16_t dX = std::abs(x1 - x0);
+//     int16_t dY = -std::abs(y1 - y0);
+
+//     if (dX > 1000 || dY > 1000) {
+//         std::cout << "Map too big "<< std::endl;
+//         return;
+//     }
+
+//     // direzione destinazione
+//     int16_t sx = (x0 < x1) ? 1 : -1;
+//     int16_t sy = (y0 < y1) ? 1 : -1;
+
+//     // err serve per decidere in quale direzione muoversi
+//     int16_t err = dX + dY;
+
+//     Pos lastPos = {0, 0};
+//     Chunk *currChunk = nullptr;
+
+//     while (true)
+//     {
+//         // esco prima della destinazione, non voglio resettare l'ultima cella
+//         if (x0 == x1 && y0 == y1)
+//             break;
+
+//         Pos cPos = getChunkPos(x0, y0);
+
+//         if (currChunk == nullptr || cPos.x != lastPos.x || cPos.y != lastPos.y)
+//         {
+//             // riprendo il chunk dal map solo se è cambiato o è nullptr (nel caso in cui coordinate fossero effettivamente 0, 0)
+//             currChunk = &_map[cPos];
+//             lastPos = cPos;
+//         }
+
+//         int16_t cellIndex = getPosIndex(x0, y0);
+
+//         if (currChunk->cells[cellIndex] < BLANK_A)
+//         {
+//             currChunk->cells[cellIndex] = 0;
+//         }
+//         else
+//         {
+//             currChunk->cells[cellIndex] -= BLANK_A;
+//         }
+
+//         int e2 = 2 * err;
+
+//         if (e2 >= dY)
+//         {
+//             err += dY;
+//             x0 += sx;
+//         }
+
+//         if (e2 <= dX)
+//         {
+//             err += dX;
+//             y0 += sy;
+//         }
+//     }
+// }
+
 void Navigator::createBlanks(int16_t targetX, int16_t targetY)
 {
-    // TODO potrebbe essere necessario mettere un padding anche agli spazi liberi
+
     Pos chunkCurrPos = getChunkPos(getPos().x, getPos().y);
     Pos chunkDestPos = getChunkPos(targetX, targetY);
     int16_t cellIndex = getPosIndex(targetX, targetY);
@@ -140,8 +216,9 @@ void Navigator::createBlanks(int16_t targetX, int16_t targetY)
     int16_t dX = std::abs(x1 - x0);
     int16_t dY = -std::abs(y1 - y0);
 
-    if (dX > 1000 || dY > 1000) {
-        std::cout << "Map too big "<< std::endl;
+    if (dX > 1000 || dY < -1000)
+    {
+        std::cout << "Map too big " << std::endl;
         return;
     }
 
@@ -161,24 +238,31 @@ void Navigator::createBlanks(int16_t targetX, int16_t targetY)
         if (x0 == x1 && y0 == y1)
             break;
 
-        Pos cPos = getChunkPos(x0, y0);
-
-        if (currChunk == nullptr || cPos.x != lastPos.x || cPos.y != lastPos.y)
+        int16_t pX[] = {-1, 1, 0, 0, 0, -1, -1, 1, 1};
+        int16_t pY[] = {0, 0, 1, -1, 0, 1, -1, 1, -1};
+        // Abbasso il valore celle celle in linea retta con la destinazione e quelle adiacenti ad esse
+        for (int i = 0; i < 9; i++)
         {
-            // riprendo il chunk dal map solo se è cambiato o è nullptr (nel caso in cui coordinate fossero effettivamente 0, 0)
-            currChunk = &_map[cPos];
-            lastPos = cPos;
-        }
+            Pos cPos = getChunkPos(x0 + pX[i], y0 + pY[i]);
+            if (currChunk == nullptr || cPos.x != lastPos.x || cPos.y != lastPos.y)
+            {
+                // riprendo il chunk dal map solo se è cambiato o è nullptr
+                currChunk = &_map[cPos];
+                lastPos = cPos;
+            }
 
-        int16_t cellIndex = getPosIndex(x0, y0);
-
-        if (currChunk->cells[cellIndex] < BLANK_A)
-        {
-            currChunk->cells[cellIndex] = 0;
-        }
-        else
-        {
-            currChunk->cells[cellIndex] -= BLANK_A;
+            int16_t cellIndex = getPosIndex(x0 + pX[i], y0 + pY[i]);
+            if (cellIndex < CHUNK_DIM && currChunk->cells[cellIndex] <= DEFAULT_VAL)
+            {
+                if (currChunk->cells[cellIndex] + BLANK_A > 255)
+                {
+                    currChunk->cells[cellIndex] = 255;
+                }
+                else if (currChunk->cells[cellIndex] > THRESHOLD_OBSTACLE)
+                {
+                    currChunk->cells[cellIndex] += BLANK_A;
+                }
+            }
         }
 
         int e2 = 2 * err;
@@ -207,14 +291,26 @@ bool isDestination(int16_t row, int16_t col, Pos dest)
         return false;
 }
 
-double Navigator::calcDistanceBetween(Pos start, Pos dest)
+int Navigator::calcDistanceBetween(Pos start, Pos dest)
 {
-    return ((double)sqrt(
-        (start.x - dest.x) * (start.x - dest.x) + (start.x - dest.y) * (start.y - dest.y)));
+    // return (sqrt(
+    //     (start.x - dest.x) * (start.x - dest.x) + (start.y - dest.y) * (start.y - dest.y)));
+
+    int dX = std::abs(start.x - dest.x);
+    int dY = std::abs(start.y - dest.y);
+
+    if (dX > dY)
+    {
+        return 14 * dY + 10 * (dX - dY);
+    }
+    else
+    {
+        return 14 * dX + 10 * (dY - dX);
+    }
 }
 
 Route tracePath(std::map<Pos, Node> &cellDetails, Pos dest)
-{    
+{
     Route r;
 
     r.numSteps = 0;
@@ -255,18 +351,18 @@ Route Navigator::aStar(Pos start, Pos goal)
     int16_t currRow = start.x;
     int16_t currCol = start.y;
 
-    if (start.x == goal.x && start.y == goal.y) {
+    if (start.x == goal.x && start.y == goal.y)
+    {
         std::cout << "Return empty route, goal == start in aStar" << std::endl;
         return Route();
     }
 
-    std::map<Pos, Node> cellDetails;              // informazioni sulle celle visitate (coordinate, g, f, h, parent)
-    set<pair<int, pair<int, int>>> openList; // celle da esplorare ordinate in base alla f
-    std::set<Pos> closedList;                     // celle già esplorate
+    std::map<Pos, Node> cellDetails;                 // informazioni sulle celle visitate (coordinate, g, f, h, parent)
+    set<pair<int, pair<int16_t, int16_t>>> openList; // celle da esplorare ordinate in base alla f
+    std::set<Pos> closedList;                        // celle già esplorate
 
     openList.insert({0, {currRow, currCol}}); // fNew, {x, y}
     cellDetails[{currRow, currCol}] = {currRow, currCol, 0, 0, 0};
-    openList.insert({0, {currRow, currCol}});
 
     int8_t dX[] = {-1, 1, 0, 0, -1, -1, 1, 1};
     int8_t dY[] = {0, 0, 1, -1, 1, -1, 1, -1};
