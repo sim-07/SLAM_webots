@@ -17,6 +17,11 @@ Navigator::Navigator()
     _currDir = 0;
 }
 
+void Navigator::setGps(webots::GPS *gps)
+{
+    _gps = gps;
+}
+
 double Navigator::getDir()
 {
     return _currDir;
@@ -30,6 +35,14 @@ void Navigator::setDir(double rad)
 
 void Navigator::setCurrPos(int16_t x, int16_t y)
 {
+    if (_gps != nullptr)
+    {
+        const double *gpsValues = _gps->getValues();
+
+        std::cout << "GPS Explorer -> X: " << gpsValues[0]
+                  << " | Y: " << gpsValues[1] << std::endl;
+    }
+
     std::cout << "Current position in nav set to: " << x << ":" << y << std::endl;
     _currPos = {x, y};
 }
@@ -89,32 +102,36 @@ void Navigator::sculpt(int16_t targetX, int16_t targetY, SensorType st)
 
     createBlanks(targetX, targetY);
 
-    int p = 2;
-    int xMax = targetX + p;
-    int xMin = targetX - p;
-    int yMax = targetY + p;
-    int yMin = targetY - p;
+    int p = 3;
 
-    for (int i = xMin; i <= xMax; i++)
+    float dis = (calcDistanceBetween(getPos(), {targetX, targetY}) / 10);
+    if (dis > p)
     {
-        for (int j = yMin; j <= yMax; j++)
+        int xMax = targetX + p;
+        int xMin = targetX - p;
+        int yMax = targetY + p;
+        int yMin = targetY - p;
+
+        for (int i = xMin; i <= xMax; i++)
         {
-            Pos cPos = getChunkPos(i, j);
-            int16_t cellIndex = getPosIndex(i, j);
-
-            Chunk &currChunk = _map[cPos];
-
-            if (currChunk.cells[cellIndex] - v <= 0)
+            for (int j = yMin; j <= yMax; j++)
             {
-                currChunk.cells[cellIndex] = 0;
-            }
-            else
-            {
-                currChunk.cells[cellIndex] -= v;
+                Pos cPos = getChunkPos(i, j);
+                int16_t cellIndex = getPosIndex(i, j);
+
+                Chunk &currChunk = _map[cPos];
+
+                if (currChunk.cells[cellIndex] - v <= 0)
+                {
+                    currChunk.cells[cellIndex] = 0;
+                }
+                else if (currChunk.cells[cellIndex] > THRESHOLD_OBSTACLE)
+                {
+                    currChunk.cells[cellIndex] -= v;
+                }
             }
         }
     }
-
 }
 
 Route Navigator::calcRoute(int16_t dest_x, int16_t dest_y)

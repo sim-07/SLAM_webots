@@ -81,11 +81,14 @@ void Explorer::update()
     case MOVE_TO_FRONTIER:
     {
 
+        _attemptsFindBorders = 0;
+
         while (true)
         {
             if (_bordersToExplore.empty())
             {
                 std::cout << "_bordersToExplore empty, finding other borders..." << std::endl;
+
                 findBorder();
 
                 if (_bordersToExplore.empty())
@@ -103,7 +106,7 @@ void Explorer::update()
                 std::cout << "closestBorder.x == _nav->getPos().x && closestBorder.y == _nav->getPos().y" << std::endl;
                 Route r;
                 r.numSteps = 1;
-                r.turnAngle = 3.1415;
+                r.turnAngle = 3.14159;
 
                 _rb->setRoute(r);
                 _rb->setCurrentState(FOLLOWING);
@@ -135,11 +138,15 @@ void Explorer::update()
                 _rb->setCurrentState(FOLLOWING);
                 setCurrentState(FOLLOWING_F);
                 return;
-            } else if (_bordersToExplore.size() == 0) {
-                std::cout << "_bordersToExplore.size() == 0" << std::endl;
-                break;
             }
-
+            else if (_bordersToExplore.size() == 0 && _attemptsFindBorders > 3)
+            {
+                std::cout << "_bordersToExplore.size() == 0" << std::endl;
+                _attemptsFindBorders = 0;
+                break;
+            } else {
+                _attemptsFindBorders++;
+            }
         }
 
         std::cout << "No frontier left, return home: _firstPos.x: " << _firstPos.x << " _firstPos.y: " << _firstPos.y << std::endl;
@@ -179,15 +186,12 @@ double Explorer::normAngle(double angle)
     return std::atan2(std::sin(angle), std::cos(angle));
 }
 
-Pos Explorer::calcCoordinates(Pos currPos, float dis, double servoAngle)
+Pos Explorer::calcCoordinates(Pos currPos, float dis, double totAngle)
 {
-    float disX = cos(servoAngle) * dis + (float)currPos.x;
-    float disY = sin(servoAngle) * dis + (float)currPos.y;
+    float disX = floor((cos(totAngle) * dis) / _nav->CELL_CM + (float)currPos.x);
+    float disY = floor((sin(totAngle) * dis) / _nav->CELL_CM + (float)currPos.y);
 
-    int16_t nX = floor(disX / _nav->CELL_CM);
-    int16_t nY = floor(disY / _nav->CELL_CM);
-
-    return {nX, nY};
+    return {static_cast<int16_t>(disX), static_cast<int16_t>(disY)};
 }
 
 void Explorer::scan()
@@ -378,9 +382,9 @@ void Explorer::findBorder()
                     if (countFrontier >= 3)
                     {
                         // Se ci sono almeno 3 celle sconosciute adiacenti è una frontiera, restituisco il percorso
-                        //std::cout << "Found frontier: " << nX << ":" << nY << std::endl;
+                        // std::cout << "Found frontier: " << nX << ":" << nY << std::endl;
                         isFrontierFound = true;
-                        foundBorder = {nX, nY};
+                        foundBorder = {currAnalyzedCell.x, currAnalyzedCell.y};
                     }
                 }
 
@@ -391,7 +395,6 @@ void Explorer::findBorder()
                 // il chunk della cella analizzata è sconosciuto, sicuramente è una frontiera
                 std::cout << "Chunk does NOT exists, found sure frontier: " << currAnalyzedCell.x << ":" << currAnalyzedCell.y << std::endl;
 
-                mapClosedList.insert({nX, nY});
                 mapClosedList.insert({currAnalyzedCell.x, currAnalyzedCell.y});
 
                 foundBorder = {currAnalyzedCell.x, currAnalyzedCell.y};

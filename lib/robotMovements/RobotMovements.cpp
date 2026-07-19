@@ -102,6 +102,8 @@ void RobotMovements::goStraight()
 
         if (std::abs(error) > 1.1)
         {
+            std::cout << "Correcting error in goStraight(), error: " << error << std::endl;
+
             float corr = error * Kp;
 
             _leftMotor->setPower(MOTOR_POWER - corr);
@@ -154,6 +156,8 @@ void RobotMovements::turn()
 
         if (std::abs(error) > 0.1)
         {
+            std::cout << "Correcting error in turn(), error: " << error << std::endl;
+
             float corr = error * Kp;
 
             _leftMotor->setPower((MOTOR_POWER - corr) * dir);

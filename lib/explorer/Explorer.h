@@ -41,19 +41,19 @@ private:
     double normAngle(double angle);
     void findBorder();
     Pos findClosestBorder(Pos currPos);
-    Pos calcCoordinates(Pos currPos, float dis, double servoAngle);
+    Pos calcCoordinates(Pos currPos, float dis, double totAngle);
 
     void deleteBorder(Pos closestBorder);
 
     Pos _firstPos;
-
     Navigator *_nav;
     RobotMovements *_rb;
     ServoMotor *_servo;
     LaserSensor *_laser;
     Ultrasonic *_ultrasonic;
-
     ExpState _currentState = IDLE;
+
+    int _attemptsFindBorders = 3;
 
     std::vector<Pos> _bordersToExplore = {{0, 0}}; // Cella iniziale messa come sconosciuta, così all'inizio farà una scansione a 360 gradi (si gira su se stesso se la frontiera ha e stesse coordinate della posizione corrente)
 

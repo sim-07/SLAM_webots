@@ -98,6 +98,9 @@ void Connection::sendMap(const httplib::Request& req, httplib::Response& res)
     std::string binary_data = "";
     uint8_t tempCells[256];
 
+    int16_t rbCoords[2] = {_nav->getPos().x, _nav->getPos().y};
+    binary_data.append((const char*)rbCoords, sizeof(rbCoords));
+
     for (const auto &p : positions)
     {
         auto it = _map->find(p);

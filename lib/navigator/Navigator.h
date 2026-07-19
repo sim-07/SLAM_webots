@@ -8,6 +8,8 @@
 #include <memory>
 #include <cstring>
 
+#include <webots/GPS.hpp>
+
 inline constexpr uint8_t DEFAULT_VAL = 128;
 inline constexpr int CHUNK_DIM = 256;
 
@@ -22,17 +24,20 @@ struct Pos
 		return y < other.y;
 	}
 
-	bool operator==(const Pos& other) const {
-        return (x == other.x && y == other.y);
-    }
+	bool operator==(const Pos &other) const
+	{
+		return (x == other.x && y == other.y);
+	}
 };
 
-struct Chunk {
-    uint8_t cells[CHUNK_DIM]; // TODO: ogni cella ne continene 2. Doppie celle con la stessa memoria. 
+struct Chunk
+{
+	uint8_t cells[CHUNK_DIM]; // TODO: ogni cella ne continene 2. Doppie celle con la stessa memoria.
 
-    Chunk() {
-        memset(cells, DEFAULT_VAL, sizeof(cells));
-    }
+	Chunk()
+	{
+		memset(cells, DEFAULT_VAL, sizeof(cells));
+	}
 };
 
 struct Route
@@ -61,6 +66,8 @@ private:
 	Pos _currPos;
 	Pos _destination;
 	double _currDir = 0.0;
+
+	webots::GPS *_gps = nullptr;
 
 	bool isFree(int16_t x, int16_t y);
 	Route aStar(Pos start, Pos goal);
@@ -93,6 +100,8 @@ public:
 	void setCurrPos(int16_t x, int16_t y);
 	void createBlanks(int16_t targetX, int16_t targetY);
 	void sculpt(int16_t targetX, int16_t targetY, SensorType st);
+
+	void setGps(webots::GPS *gps);
 };
 
 #endif

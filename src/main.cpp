@@ -3,6 +3,7 @@
 #include <webots/Motor.hpp>
 #include <webots/PositionSensor.hpp>
 #include <webots/DistanceSensor.hpp>
+#include <webots/GPS.hpp>
 
 #include <RobotMovements.h>
 #include <Explorer.h>
@@ -58,6 +59,14 @@ int main(int argc, char **argv)
 
     webots::Motor *webotsServo = robot->getMotor("servo_motor");
 
+    webots::GPS *gpsWebots = robot->getGPS("gps");
+    if (gpsWebots) {
+        gpsWebots->enable(timeStep);
+    } else {
+        std::cout << "Error gps" << std::endl;
+    }
+
+    nav.setGps(gpsWebots);
     
 
     bool isLsOk = ls.init(webotsLaser);
@@ -81,6 +90,7 @@ int main(int argc, char **argv)
 
     while (robot->step(timeStep) != -1)
     {
+
         explorer.update();
         rb.update();
     }

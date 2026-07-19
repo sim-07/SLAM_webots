@@ -127,6 +127,9 @@
             //receiveMess();
         };
 
+        let rbX = 0;
+        let rbY = 0;
+
         const map = new Map();
 
         async function receiveMap() {
@@ -135,7 +138,10 @@
                 const buffer = await response.arrayBuffer(); // Tutto il binario ricevuto
                 const view = new DataView(buffer);
 
-                let offset = 0;
+                rbX = view.getInt16(0, true);
+                rbY = view.getInt16(2, true);
+
+                let offset = 4;
                 while (offset < buffer.byteLength) {
                     // Primi 4 byte sono per le coordinate
                     const chunkX = view.getInt16(offset, true);
@@ -200,7 +206,7 @@
             let minChunkX = Infinity, maxChunkX = -Infinity;
             let minChunkY = Infinity, maxChunkY = -Infinity;
 
-            
+
 
             for (let [c, cells] of map) {
                 const [chunkX, chunkY] = c.split(", ").map(Number);
@@ -246,7 +252,7 @@
                     for (let j = 0; j < 16; j++) { // colonne (X)
 
                         let cellIndex = i * 16 + j;
-                        
+
                         let coordX = j * cellDim + offsetX;
                         let coordY = (15 - i) * cellDim + offsetY;
 
@@ -254,8 +260,15 @@
                         ctx.fillRect(coordX, coordY, cellDim, cellDim);
                     }
                 }
-
             }
+
+            let rbCanvasX = (rbX - (centerMapX * 16)) * (scaleChunk / 16) + centerCanvasX;
+            let rbCanvasY = centerCanvasY - (rbY - (centerMapY * 16)) * (scaleChunk / 16);
+
+            ctx.fillStyle = "#00FF00";
+            ctx.beginPath();
+            ctx.arc(rbCanvasX, rbCanvasY, scaleChunk / 16, 0, Math.PI * 2);
+            ctx.fill();
         }
 
         function getColor(val) {
