@@ -11,6 +11,9 @@
 #include "../../src/Common.h"
 
 static const uint8_t MOTOR_POWER = 150;
+static const uint8_t MIN_MOTOR_POWER = 30;
+static const float TURN_TOLERANCE = 0.1;
+static const float POWER_REDUCE_CONSTANT = 50;
 
 // enum NavStatus {
 //     SUCCESS = 0,

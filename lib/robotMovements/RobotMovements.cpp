@@ -90,12 +90,13 @@ void RobotMovements::setCurrentState(RbState currState)
 void RobotMovements::goStraight()
 {
 
+    float dL = abs(_leftEnc->getCurrDistance());
+    float dR = abs(_rightEnc->getCurrDistance());
+
+    _avgStraight = (dL + dR) / 2.0;
+
     if (_avgStraight < abs(_targetDis))
     {
-        float dL = abs(_leftEnc->getCurrDistance());
-        float dR = abs(_rightEnc->getCurrDistance());
-
-        _avgStraight = (dL + dR) / 2.0;
 
         std::cout << "Moving forward in rb: _avgStraight: " << _avgStraight << " abs(_targetDis): " << abs(_targetDis) << std::endl;
 
@@ -122,9 +123,10 @@ void RobotMovements::goStraight()
         stop();
         _leftEnc->reset();
         _rightEnc->reset();
+
+        _nav->setCurrPos(_currentRoute.route[_currIndexRoute].x, _currentRoute.route[_currIndexRoute].y);
         _targetDis = 0;
         _avgStraight = 0;
-        _nav->setCurrPos(_currentRoute.route[_currIndexRoute].x, _currentRoute.route[_currIndexRoute].y); // TODO controllare
         setCurrentState(FOLLOWING);
     }
 }
@@ -146,10 +148,12 @@ void RobotMovements::turn()
 
     _avgTurn = (abs_dis_l + abs_dis_r) / 2;
 
-    if (_avgTurn < turnDis)
+    if (turnDis - _avgTurn > TURN_TOLERANCE)
     {
+        float powerReducer = POWER_REDUCE_CONSTANT / (turnDis - _avgTurn);
+        float motorPower = MOTOR_POWER - powerReducer > MIN_MOTOR_POWER ? MOTOR_POWER - powerReducer : MIN_MOTOR_POWER;
 
-        std::cout << "Turning in rb: _avgTurn: " << _avgTurn << " turnDis: " << turnDis << std::endl;
+        std::cout << "Turning in rb: _avgTurn: " << _avgTurn << " | turnDis: " << turnDis << " | motorPower: " << motorPower << std::endl;
 
         float error = abs_dis_l - abs_dis_r;
 
@@ -159,24 +163,23 @@ void RobotMovements::turn()
 
             float corr = error * Kp;
 
-            _leftMotor->setPower((MOTOR_POWER - corr) * dir);
-            _rightMotor->setPower((MOTOR_POWER + corr) * -dir);
+            _leftMotor->setPower((motorPower - corr) * dir);
+            _rightMotor->setPower((motorPower + corr) * -dir);
         }
         else
         {
-            _leftMotor->setPower(MOTOR_POWER * dir);
-            _rightMotor->setPower(MOTOR_POWER * -dir);
+            _leftMotor->setPower(motorPower * dir);
+            _rightMotor->setPower(motorPower * -dir);
         }
     }
     else
     {
-        std::cout << "Finished turning, _avgTurn: " << _avgTurn << std::endl;
-
         stop();
         _leftEnc->reset();
         _rightEnc->reset();
-        double realAngle = _avgTurn / (_wheelDistance / 2);
-        _nav->setDir(normAngle(_nav->getDir() + realAngle * -dir));
+        double realAngle = normAngle(_nav->getDir() + (_avgTurn / (_wheelDistance / 2)) * -dir);
+        _nav->setDir(realAngle);
+        std::cout << "Finished turning, _avgTurn: " << _avgTurn << std::endl;
         _targetRad = 0;
         _avgTurn = 0;
         setCurrentState(FOLLOWING);
@@ -203,7 +206,7 @@ void RobotMovements::followPath()
     if (_currentRoute.numSteps == 1 && _currentRoute.turnAngle > 0)
     {
         std::cout << "_currentRoute.numSteps == 1 && _currentRoute.turnAngle > 0 in rb" << std::endl;
-        if (std::abs(normAngle(_currentRoute.turnAngle - _nav->getDir())) < 0.05)
+        if (std::abs(normAngle(_currentRoute.turnAngle - _nav->getDir())) < TURN_TOLERANCE)
         {
             std::cout << "COMPLETED_ROUTE" << std::endl;
             setCurrentState(COMPLETED_ROUTE);
