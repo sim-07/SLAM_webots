@@ -6,14 +6,14 @@
 class Encoder {
 
     private:
-        const float _wheelRadius;
+        const float _wheelRadius = 0;
         float _offsetRad = 0.0f;
 
         webots::PositionSensor* _webotsSensor = nullptr;
 
 
     public:
-        Encoder(float wheelRadius = 4)
+        Encoder(float wheelRadius)
             : _wheelRadius(wheelRadius) {}
 
         bool init(webots::PositionSensor* webotsSensor);

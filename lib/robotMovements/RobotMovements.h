@@ -60,15 +60,18 @@ private:
 
     void goTo();
 
-    const float _wheelDistance = 10.0;
+    const float _wheelDistance = 0;
 
 public:
-    RobotMovements() {}
+    RobotMovements(double wheelDistance)
+        : _wheelDistance(wheelDistance)
+    {
+    }
 
     void init(Navigator *n,
               Encoder *le,
-              Encoder *re, 
-              Motor *lm, 
+              Encoder *re,
+              Motor *lm,
               Motor *rm);
     void goStraight();
     void turn();

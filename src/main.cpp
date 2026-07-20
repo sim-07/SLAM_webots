@@ -1,9 +1,11 @@
 #include <iostream>
+
 #include <webots/Robot.hpp>
 #include <webots/Motor.hpp>
 #include <webots/PositionSensor.hpp>
 #include <webots/DistanceSensor.hpp>
 #include <webots/GPS.hpp>
+#include <webots/Compass.hpp>
 
 #include <RobotMovements.h>
 #include <Explorer.h>
@@ -12,13 +14,16 @@
 
 #include "Common.h"
 
+const float WHEELS_DISTANCE = 12.0;
+const float WHEELS_RADIUS = 4.0;
+
 int main(int argc, char **argv)
 {
 
     webots::Robot *robot = new webots::Robot();
     int timeStep = (int)robot->getBasicTimeStep();
 
-    RobotMovements rb;
+    RobotMovements rb(WHEELS_DISTANCE);
     Navigator nav;
     Explorer explorer;
     Connection conn;
@@ -26,8 +31,8 @@ int main(int argc, char **argv)
     LaserSensor ls;
     Ultrasonic ultrasonic;
 
-    Encoder leftEnc;
-    Encoder rightEnc;
+    Encoder leftEnc(WHEELS_RADIUS);
+    Encoder rightEnc(WHEELS_RADIUS);
 
     Motor leftMotor;
     Motor rightMotor;
@@ -60,23 +65,28 @@ int main(int argc, char **argv)
     webots::Motor *webotsServo = robot->getMotor("servo_motor");
 
     webots::GPS *gpsWebots = robot->getGPS("gps");
-    if (gpsWebots) {
+    if (gpsWebots)
+    {
         gpsWebots->enable(timeStep);
-    } else {
+    }
+    else
+    {
         std::cout << "Error gps" << std::endl;
     }
 
-    nav.setGps(gpsWebots);
-    
+    webots::Compass *compass = robot->getCompass("compass");
+    compass->enable(timeStep);
 
     bool isLsOk = ls.init(webotsLaser);
 
-    if (!isLsOk) {
+    if (!isLsOk)
+    {
         std::cout << "Problem with laser" << std::endl;
     }
 
     bool isUltrasonicOk = ultrasonic.init(webotsUS);
-    if (!isUltrasonicOk) {
+    if (!isUltrasonicOk)
+    {
         std::cout << "Problem with ultrasonic" << std::endl;
     }
 
@@ -90,6 +100,13 @@ int main(int argc, char **argv)
 
     while (robot->step(timeStep) != -1)
     {
+        const double *gpsValues = gpsWebots->getValues();
+        const double *compassValues = compass->getValues();
+
+        if (gpsValues != nullptr && compassValues != nullptr)
+        {
+            nav.updateGps(gpsValues, compassValues);
+        }
 
         explorer.update();
         rb.update();
@@ -98,4 +115,3 @@ int main(int argc, char **argv)
     delete robot;
     return 0;
 }
-

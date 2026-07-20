@@ -18,8 +18,6 @@ void Encoder::reset() {
 }
 
 float Encoder::getCurrDistance() { // cm
-    _webotsSensor->getValue();
-
     float relRad = _webotsSensor->getValue() - _offsetRad;
 
     return relRad * _wheelRadius;

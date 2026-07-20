@@ -92,11 +92,12 @@ void RobotMovements::goStraight()
 
     if (_avgStraight < abs(_targetDis))
     {
-        std::cout << "Moving forward in rb: _avgStraight: " << _avgStraight << " abs(_targetDis): " << abs(_targetDis) << std::endl;
         float dL = abs(_leftEnc->getCurrDistance());
         float dR = abs(_rightEnc->getCurrDistance());
 
         _avgStraight = (dL + dR) / 2.0;
+
+        std::cout << "Moving forward in rb: _avgStraight: " << _avgStraight << " abs(_targetDis): " << abs(_targetDis) << std::endl;
 
         float error = dL - dR;
 
@@ -137,20 +138,18 @@ void RobotMovements::stop()
 void RobotMovements::turn()
 {
 
-    double turnDis = abs((_wheelDistance * _targetRad) / 2.0f); // totale distanza che le ruote devono percorrere
+    double turnDis = std::abs((_wheelDistance * _targetRad) / 2.0f); // totale distanza che le ruote devono percorrere
     int dir = (_targetRad > 0) ? -1 : 1;
+
+    float abs_dis_l = std::abs(_leftEnc->getCurrDistance());
+    float abs_dis_r = std::abs(_rightEnc->getCurrDistance());
+
+    _avgTurn = (abs_dis_l + abs_dis_r) / 2;
 
     if (_avgTurn < turnDis)
     {
+
         std::cout << "Turning in rb: _avgTurn: " << _avgTurn << " turnDis: " << turnDis << std::endl;
-
-        float abs_dis_l = abs(_leftEnc->getCurrDistance());
-        float abs_dis_r = abs(_rightEnc->getCurrDistance());
-
-        // std::cout << "abs_dis_l: " << abs_dis_l << std::endl;
-        // std::cout << "abs_dis_r: " << abs_dis_r << std::endl;
-
-        _avgTurn = (abs_dis_l + abs_dis_r) / 2;
 
         float error = abs_dis_l - abs_dis_r;
 
@@ -171,12 +170,13 @@ void RobotMovements::turn()
     }
     else
     {
-        std::cout << "Finished turning" << std::endl;
+        std::cout << "Finished turning, _avgTurn: " << _avgTurn << std::endl;
 
         stop();
         _leftEnc->reset();
         _rightEnc->reset();
-        _nav->setDir(normAngle(_nav->getDir() + _targetRad));
+        double realAngle = _avgTurn / (_wheelDistance / 2);
+        _nav->setDir(normAngle(_nav->getDir() + realAngle * -dir));
         _targetRad = 0;
         _avgTurn = 0;
         setCurrentState(FOLLOWING);
@@ -187,7 +187,7 @@ void RobotMovements::turn()
         _encProblem++;
     }
 
-    if (_encProblem > 2)
+    if (_encProblem > 3)
     {
         std::cout << "Enc problem" << std::endl;
 

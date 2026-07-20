@@ -9,6 +9,7 @@
 #include <cstring>
 
 #include <webots/GPS.hpp>
+#include <webots/Compass.hpp>
 
 inline constexpr uint8_t DEFAULT_VAL = 128;
 inline constexpr int CHUNK_DIM = 256;
@@ -68,6 +69,17 @@ private:
 	double _currDir = 0.0;
 
 	webots::GPS *_gps = nullptr;
+	webots::Compass *_compass = nullptr;
+
+	double _compassOffset = 0.0;
+	double _currDirCompass = 0.0;
+	bool _isSensorsCalibrated = false;
+
+	int _gpsOffsetX;
+	int _gpsOffsetY;
+
+	int _currXWebots;
+	int _currYWebots;
 
 	bool isFree(int16_t x, int16_t y);
 	Route aStar(Pos start, Pos goal);
@@ -101,7 +113,9 @@ public:
 	void createBlanks(int16_t targetX, int16_t targetY);
 	void sculpt(int16_t targetX, int16_t targetY, SensorType st);
 
-	void setGps(webots::GPS *gps);
+	void updateGps(const double *gpsValues, const double *compassValues);
+
+	void setGps(webots::GPS *gps, webots::Compass *compass);
 };
 
 #endif
