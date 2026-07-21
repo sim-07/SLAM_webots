@@ -13,12 +13,12 @@ bool Encoder::init(webots::PositionSensor* webotsSensor) {
 
 void Encoder::reset() {
     if (_webotsSensor != nullptr) {
-        _offsetRad = _webotsSensor->getValue();
+        _offsetDis = _webotsSensor->getValue();
     }
 }
 
 float Encoder::getCurrDistance() { // cm
-    float relRad = _webotsSensor->getValue() - _offsetRad;
+    float relRad = _webotsSensor->getValue() - _offsetDis;
 
     return relRad * _wheelRadius;
 }

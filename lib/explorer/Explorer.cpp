@@ -115,7 +115,7 @@ void Explorer::update()
             }
 
             std::cout << "Calculating route for " << closestBorder.x << ":" << closestBorder.y << std::endl;
-            Route routeFrontier = _nav->calcRoute(closestBorder.x, closestBorder.y);
+            Route routeFrontier = _nav->calcRoute({closestBorder.x, closestBorder.y});
             std::cout << "routeFrontier.numSteps: " << routeFrontier.numSteps << std::endl;
 
             if (routeFrontier.numSteps > 0)
@@ -151,7 +151,7 @@ void Explorer::update()
 
         std::cout << "No frontier left, return home: _firstPos.x: " << _firstPos.x << " _firstPos.y: " << _firstPos.y << std::endl;
 
-        Route rHome = _nav->calcRoute(_firstPos.x, _firstPos.y);
+        Route rHome = _nav->calcRoute({_firstPos.x, _firstPos.y});
         if (rHome.numSteps == -1)
         {
             std::cout << "Can't go home" << std::endl;
@@ -337,8 +337,8 @@ void Explorer::findBorder()
 
             // std::cout << "Currently analyzing in findBorder(): " << nX << ":" << nY << std::endl;
 
-            Pos chunkPos = _nav->getChunkPos(nX, nY);
-            int16_t index = _nav->getPosIndex(nX, nY);
+            Pos chunkPos = _nav->getChunkPos({nX, nY});
+            int16_t index = _nav->getPosIndex({nX, nY});
 
             auto it = map.find(chunkPos);
 
@@ -357,15 +357,15 @@ void Explorer::findBorder()
                 }
                 else if (chunk.cells[index] == DEFAULT_VAL)
                 { // Cella sconosciuta, trovata possibile frontiera
-                    // std::cout << "It's unknown" << std::endl;
+                    //std::cout << "It's unknown" << std::endl;
                     uint8_t countFrontier = 0;
                     for (uint8_t j = 0; j < 8; j++)
                     { // Analizzo celle adiacenti a quella sconosciuta
                         int16_t nXC = nX + dX[j];
                         int16_t nYC = nY + dY[j];
 
-                        Pos chunkPosC = _nav->getChunkPos(nXC, nYC);
-                        int16_t indexC = _nav->getPosIndex(nXC, nYC);
+                        Pos chunkPosC = _nav->getChunkPos({nXC, nYC});
+                        int16_t indexC = _nav->getPosIndex({nXC, nYC});
 
                         auto itC = map.find(chunkPosC);
                         if (itC != map.end())
@@ -382,7 +382,7 @@ void Explorer::findBorder()
                     if (countFrontier >= 3)
                     {
                         // Se ci sono almeno 3 celle sconosciute adiacenti è una frontiera, restituisco il percorso
-                        // std::cout << "Found frontier: " << nX << ":" << nY << std::endl;
+                        //std::cout << "Found frontier: " << nX << ":" << nY << std::endl;
                         isFrontierFound = true;
                         foundBorder = {currAnalyzedCell.x, currAnalyzedCell.y};
                     }

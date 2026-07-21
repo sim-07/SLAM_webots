@@ -60,7 +60,7 @@ void RobotMovements::update()
 
 void RobotMovements::goTo()
 {
-    Route r = _nav->calcRoute(_destination.x, _destination.y);
+    Route r = _nav->calcRoute({_destination.x, _destination.y});
 
     if (r.numSteps > 0)
     {
@@ -123,8 +123,9 @@ void RobotMovements::goStraight()
         stop();
         _leftEnc->reset();
         _rightEnc->reset();
-
-        _nav->setCurrPos(_currentRoute.route[_currIndexRoute].x, _currentRoute.route[_currIndexRoute].y);
+        // Pos newPos = _nav->calcFinalCell(_nav->getPos(), _nav->getDir(), _avgStraight);
+        // _nav->setCurrPos(newPos);
+        _nav->setCurrPos({_currentRoute.route[_currIndexRoute].x, _currentRoute.route[_currIndexRoute].y});
         _targetDis = 0;
         _avgStraight = 0;
         setCurrentState(FOLLOWING);
@@ -177,7 +178,7 @@ void RobotMovements::turn()
         stop();
         _leftEnc->reset();
         _rightEnc->reset();
-        double realAngle = normAngle(_nav->getDir() + (_avgTurn / (_wheelDistance / 2)) * -dir);
+        double realAngle = normAngle(_nav->getDir() + (_avgTurn / (_wheelDistance / 2.0f)) * -dir);
         _nav->setDir(realAngle);
         std::cout << "Finished turning, _avgTurn: " << _avgTurn << std::endl;
         _targetRad = 0;

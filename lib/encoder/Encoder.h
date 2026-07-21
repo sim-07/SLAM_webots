@@ -7,7 +7,7 @@ class Encoder {
 
     private:
         const float _wheelRadius = 0;
-        float _offsetRad = 0.0f;
+        float _offsetDis = 0.0f;
 
         webots::PositionSensor* _webotsSensor = nullptr;
 

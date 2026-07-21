@@ -14,6 +14,26 @@
 inline constexpr uint8_t DEFAULT_VAL = 128;
 inline constexpr int CHUNK_DIM = 256;
 
+// struct Pos
+// {
+//     int16_t x, y;
+
+//     Pos(int x = -32768, int y = -32768) 
+//         : x(static_cast<int16_t>(x)), y(static_cast<int16_t>(y)) {}
+
+//     bool operator<(const Pos &other) const
+//     {
+//         if (x != other.x)
+//             return x < other.x;
+//         return y < other.y;
+//     }
+
+//     bool operator==(const Pos &other) const
+//     {
+//         return (x == other.x && y == other.y);
+//     }
+// };
+
 struct Pos
 {
 	int16_t x = -32768, y = -32768;
@@ -64,7 +84,7 @@ class Navigator
 private:
 	std::map<Pos, Chunk> _map;
 
-	Pos _currPos;
+	Pos _currPos = {0, 0};
 	Pos _destination;
 	double _currDir = 0.0;
 
@@ -100,17 +120,18 @@ public:
 	Navigator();
 
 	Pos getPos() { return _currPos; }
-	Route calcRoute(int16_t x, int16_t y);
+	Pos calcFinalCell(Pos start, double angle, float dis);
+	Route calcRoute(Pos dest);
 	int calcDistanceBetween(Pos start, Pos dest);
-	static int16_t getPosIndex(int16_t x, int16_t y);
-	static Pos getChunkPos(int16_t x, int16_t y);
+	static int16_t getPosIndex(Pos p);
+	static Pos getChunkPos(Pos p);
 
 	const std::map<Pos, Chunk> &getMap() const;
 	double getDir();
 
 	void setDir(double angle);
-	void setCurrPos(int16_t x, int16_t y);
-	void createBlanks(int16_t targetX, int16_t targetY);
+	void setCurrPos(Pos newPos);
+	void createBlanks(Pos target);
 	void sculpt(int16_t targetX, int16_t targetY, SensorType st);
 
 	void updateGps(const double *gpsValues, const double *compassValues);

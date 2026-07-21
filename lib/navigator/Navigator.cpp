@@ -22,23 +22,28 @@ double Navigator::getDir()
     return _currDir;
 }
 
+Pos Navigator::calcFinalCell(Pos start, double angle, float dis) {
+    int16_t dX = std::round((std::cos(angle) * dis) / CELL_CM);
+    int16_t dY = std::round((std::sin(angle) * dis) / CELL_CM);
+
+    return { static_cast<int16_t>(start.x + dX), static_cast<int16_t>(start.y + dY) };
+}
+
 void Navigator::updateGps(const double *gpsValues, const double *compassValues) 
 {
-    if (std::isnan(gpsValues[0]) || std::isnan(compassValues[0])) return;
-
-    const double cellSizeMetres = (double)CELL_CM / 100.0;
+    if (std::isnan(compassValues[0])) return;
 
     double rawCompassRad = -std::atan2(compassValues[0], compassValues[2]);
 
     if (!_isSensorsCalibrated) 
     {
-        _gpsOffsetX = gpsValues[0];
-        _gpsOffsetY = gpsValues[1];
+        // _gpsOffsetX = gpsValues[0];
+        // _gpsOffsetY = gpsValues[2];
 
-        std::cout << "[CALIBRATION] GPS Offset X (metri): " << _gpsOffsetX 
-                  << " | Y (metri): " << _gpsOffsetY << std::endl;
+        // std::cout << "[GPS RAW] X: " << gpsValues[0] 
+        //   << " | Y: " << gpsValues[1] 
+        //   << " | Z: " << gpsValues[2] << std::endl;
 
-         // Inizialmente il robot potrebbe non essere a 0 rad di webots, quindi calcolo l'offset
         _compassOffset = -rawCompassRad; // Angolo iniziale nella mia logica è 0, quindi metto negativo (0-rawCompassRad)
 
         std::cout << "[COMPASS RAW] X: " << compassValues[0] 
@@ -50,13 +55,12 @@ void Navigator::updateGps(const double *gpsValues, const double *compassValues)
         _isSensorsCalibrated = true;
     }
 
-    double relativeXMetres = gpsValues[0] - _gpsOffsetX;
-    double relativeYMetres = gpsValues[1] - _gpsOffsetY;
+    // double relativeXMetres = gpsValues[0] - _gpsOffsetX;
+    // double relativeYMetres = gpsValues[2] - _gpsOffsetY;
 
-    _currXWebots = (int16_t)std::round(relativeXMetres / cellSizeMetres);
-    _currYWebots = (int16_t)std::round(-relativeYMetres / cellSizeMetres);
+    // _currXWebots = (int16_t)std::round(-relativeXMetres / ((double)CELL_CM / 100.0));
+    // _currYWebots = (int16_t)std::round(relativeYMetres / ((double)CELL_CM / 100.0));
 
-    
     double correctedCompassRad = rawCompassRad + _compassOffset;
     
     _currDirCompass = std::atan2(std::sin(correctedCompassRad), std::cos(correctedCompassRad));
@@ -68,20 +72,20 @@ void Navigator::setDir(double rad)
     std::cout << "_currDirCompass WETBOTS: " << _currDirCompass << std::endl;
 
     std::cout << "_currDir in nav set to: " << rad << std::endl;
-    _currDir = rad;
+    _currDir = _currDirCompass;
 }
 
-void Navigator::setCurrPos(int16_t x, int16_t y)
+void Navigator::setCurrPos(Pos newPos)
 {
-    std::cout << "Current position in WEBOTS set to: " << _currXWebots << ":" << _currYWebots << std::endl;
+    //std::cout << "Current position in WEBOTS set to: " << _currXWebots << ":" << _currYWebots << std::endl;
 
-    std::cout << "Current position in nav set to: " << x << ":" << y << std::endl;
-    _currPos = {x, y};
+    std::cout << "Current position in nav set to: " << newPos.x << ":" << newPos.y << std::endl;
+    _currPos = newPos;
 }
 
 bool Navigator::isFree(int16_t x, int16_t y)
 {
-    Pos p = getChunkPos(x, y);
+    Pos p = getChunkPos({x, y});
 
     auto it = _map.find(p);
 
@@ -90,7 +94,7 @@ bool Navigator::isFree(int16_t x, int16_t y)
         return false;
     }
 
-    int16_t cellIndex = getPosIndex(x, y);
+    int16_t cellIndex = getPosIndex({x, y});
     bool free = it->second.cells[cellIndex] > DEFAULT_VAL;
 
     return free;
@@ -101,15 +105,15 @@ const std::map<Pos, Chunk> &Navigator::getMap() const
     return _map;
 }
 
-Pos Navigator::getChunkPos(int16_t x, int16_t y)
+Pos Navigator::getChunkPos(Pos p)
 {
-    return {(int16_t)(x >> 4), (int16_t)(y >> 4)}; // / 16 e arrotondato per difetto, mantenendo il segno
+    return {(int16_t)(p.x >> 4), (int16_t)(p.y >> 4)}; // / 16 e arrotondato per difetto, mantenendo il segno
 }
 
-int16_t Navigator::getPosIndex(int16_t x, int16_t y)
+int16_t Navigator::getPosIndex(Pos p)
 {
-    int16_t posCellX = x & 0x0F; // % 16 sempre positivo
-    int16_t posCellY = y & 0x0F;
+    int16_t posCellX = p.x & 0x0F; // % 16 sempre positivo
+    int16_t posCellY = p.y & 0x0F;
 
     return (posCellY * CHUNK_WIDTH) + posCellX;
 }
@@ -132,7 +136,7 @@ void Navigator::sculpt(int16_t targetX, int16_t targetY, SensorType st)
         break;
     }
 
-    createBlanks(targetX, targetY);
+    createBlanks({targetX, targetY});
 
     int p = 2;
 
@@ -144,12 +148,12 @@ void Navigator::sculpt(int16_t targetX, int16_t targetY, SensorType st)
         int yMax = targetY + p;
         int yMin = targetY - p;
 
-        for (int i = xMin; i <= xMax; i++)
+        for (int16_t i = xMin; i <= xMax; i++)
         {
-            for (int j = yMin; j <= yMax; j++)
+            for (int16_t j = yMin; j <= yMax; j++)
             {
-                Pos cPos = getChunkPos(i, j);
-                int16_t cellIndex = getPosIndex(i, j);
+                Pos cPos = getChunkPos({i, j});
+                int16_t cellIndex = getPosIndex({i, j});
 
                 Chunk &currChunk = _map[cPos];
 
@@ -166,26 +170,24 @@ void Navigator::sculpt(int16_t targetX, int16_t targetY, SensorType st)
     }
 }
 
-Route Navigator::calcRoute(int16_t dest_x, int16_t dest_y)
+Route Navigator::calcRoute(Pos dest)
 {
-    std::cout << "Inside calcRoute in nav for: " << dest_x << ":" << dest_y << std::endl;
+    std::cout << "Inside calcRoute in nav for: " << dest.x << ":" << dest.y << std::endl;
 
-    Pos destPos = {dest_x, dest_y};
-
-    return aStar(_currPos, destPos);
+    return aStar(_currPos, dest);
 }
 
-void Navigator::createBlanks(int16_t targetX, int16_t targetY)
+void Navigator::createBlanks(Pos target)
 {
 
-    Pos chunkCurrPos = getChunkPos(getPos().x, getPos().y);
-    Pos chunkDestPos = getChunkPos(targetX, targetY);
-    int16_t cellIndex = getPosIndex(targetX, targetY);
+    Pos chunkCurrPos = getChunkPos({getPos().x, getPos().y});
+    Pos chunkDestPos = getChunkPos(target);
+    int16_t cellIndex = getPosIndex(target);
 
     int16_t x0 = getPos().x;
     int16_t y0 = getPos().y;
-    int16_t x1 = targetX;
-    int16_t y1 = targetY;
+    int16_t x1 = target.x;
+    int16_t y1 = target.y;
 
     // delta x e y
     int16_t dX = std::abs(x1 - x0);
@@ -216,9 +218,9 @@ void Navigator::createBlanks(int16_t targetX, int16_t targetY)
         // int16_t pX[] = {-1, 1, 0, 0, 0, -1, -1, 1, 1};
         // int16_t pY[] = {0, 0, 1, -1, 0, 1, -1, 1, -1};
         // // Abbasso il valore celle celle in linea retta con la destinazione e quelle adiacenti ad esse
-        // for (int i = 0; i < 9; i++)
+        // for (int16_t i = 0; i < 9; i++)
         // {
-        //     Pos cPos = getChunkPos(x0 + pX[i], y0 + pY[i]);
+        //     Pos cPos = getChunkPos({x0 + pX[i], y0 + pY[i]});
         //     if (currChunk == nullptr || cPos.x != lastPos.x || cPos.y != lastPos.y)
         //     {
         //         // riprendo il chunk dal map solo se è cambiato o è nullptr
@@ -226,7 +228,7 @@ void Navigator::createBlanks(int16_t targetX, int16_t targetY)
         //         lastPos = cPos;
         //     }
 
-        //     int16_t cellIndex = getPosIndex(x0 + pX[i], y0 + pY[i]);
+        //     int16_t cellIndex = getPosIndex({x0 + pX[i], y0 + pY[i]});
         //     if (cellIndex < CHUNK_DIM && currChunk->cells[cellIndex] <= DEFAULT_VAL)
         //     {
         //         if (currChunk->cells[cellIndex] + BLANK_A > 255)
@@ -240,7 +242,7 @@ void Navigator::createBlanks(int16_t targetX, int16_t targetY)
         //     }
         // }
 
-        Pos cPos = getChunkPos(x0, y0);
+        Pos cPos = getChunkPos({x0, y0});
         if (currChunk == nullptr || cPos.x != lastPos.x || cPos.y != lastPos.y)
         {
             // riprendo il chunk dal map solo se è cambiato o è nullptr
@@ -248,7 +250,7 @@ void Navigator::createBlanks(int16_t targetX, int16_t targetY)
             lastPos = cPos;
         }
 
-        int16_t cellIndex = getPosIndex(x0, y0);
+        int16_t cellIndex = getPosIndex({x0, y0});
         if (cellIndex < CHUNK_DIM && currChunk->cells[cellIndex] <= DEFAULT_VAL)
         {
             if (currChunk->cells[cellIndex] + BLANK_A > 255)
