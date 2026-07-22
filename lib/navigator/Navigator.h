@@ -110,9 +110,9 @@ public:
 	};
 	static const uint8_t CELL_CM = 10;
 	static const uint8_t CHUNK_WIDTH = 16;
-	static const uint8_t ULTRASONIC_A = 10;
+	static const uint8_t ULTRASONIC_A = 30;
 	static const uint8_t LASER_A = 40;
-	static const uint8_t BLANK_A = 40;
+	static const uint8_t BLANK_A = 20;
 	static const uint8_t THRESHOLD_OBSTACLE = DEFAULT_VAL - LASER_A;
 	static const uint8_t PADDING_SCULPT = 2;
 

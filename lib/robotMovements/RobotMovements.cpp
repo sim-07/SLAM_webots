@@ -66,6 +66,8 @@ void RobotMovements::goTo()
     {
         setCurrentState(FOLLOWING);
         _currentRoute = r;
+    } else {
+        setCurrentState(COMPLETED_ROUTE);
     }
 }
 

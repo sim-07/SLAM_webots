@@ -13,7 +13,7 @@
 #include <set>
 
 static const double SCAN_PRECISION = 0.0872; // ogni quanti gradi scansiona (5)
-static const int MAX_BORDERS_FOUND = 5;
+static const int MAX_BORDERS_FOUND = 3;
 
 enum ExpState
 {

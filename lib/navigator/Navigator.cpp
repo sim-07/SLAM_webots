@@ -94,7 +94,7 @@ bool Navigator::isFree(int16_t x, int16_t y)
     }
 
     int16_t cellIndex = getPosIndex({x, y});
-    bool free = it->second.cells[cellIndex] >= DEFAULT_VAL;
+    bool free = it->second.cells[cellIndex] > DEFAULT_VAL;
 
     return free;
 }
