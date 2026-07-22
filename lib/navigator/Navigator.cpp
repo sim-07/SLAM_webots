@@ -22,62 +22,61 @@ double Navigator::getDir()
     return _currDir;
 }
 
-Pos Navigator::calcFinalCell(Pos start, double angle, float dis) {
+Pos Navigator::calcFinalCell(Pos start, double angle, float dis)
+{
     int16_t dX = std::round((std::cos(angle) * dis) / CELL_CM);
     int16_t dY = std::round((std::sin(angle) * dis) / CELL_CM);
 
-    return { static_cast<int16_t>(start.x + dX), static_cast<int16_t>(start.y + dY) };
+    return {static_cast<int16_t>(start.x + dX), static_cast<int16_t>(start.y + dY)};
 }
 
-void Navigator::updateGps(const double *gpsValues, const double *compassValues) 
+void Navigator::updateCompass(const double *compassValues)
 {
-    if (std::isnan(compassValues[0])) return;
+    if (std::isnan(compassValues[0]))
+        return;
 
     double rawCompassRad = -std::atan2(compassValues[0], compassValues[2]);
 
-    if (!_isSensorsCalibrated) 
+    if (!_isSensorsCalibrated)
     {
-        // _gpsOffsetX = gpsValues[0];
-        // _gpsOffsetY = gpsValues[2];
-
-        // std::cout << "[GPS RAW] X: " << gpsValues[0] 
-        //   << " | Y: " << gpsValues[1] 
-        //   << " | Z: " << gpsValues[2] << std::endl;
 
         _compassOffset = -rawCompassRad; // Angolo iniziale nella mia logica è 0, quindi metto negativo (0-rawCompassRad)
 
-        std::cout << "[COMPASS RAW] X: " << compassValues[0] 
-          << " | Y: " << compassValues[1] 
-          << " | Z: " << compassValues[2] << std::endl;
+        std::cout << "[COMPASS RAW] X: " << compassValues[0]
+                  << " | Y: " << compassValues[1]
+                  << " | Z: " << compassValues[2] << std::endl;
 
         std::cout << "[CALIBRATION] Compass Offset (rad): " << _compassOffset << std::endl;
 
         _isSensorsCalibrated = true;
     }
 
-    // double relativeXMetres = gpsValues[0] - _gpsOffsetX;
-    // double relativeYMetres = gpsValues[2] - _gpsOffsetY;
-
-    // _currXWebots = (int16_t)std::round(-relativeXMetres / ((double)CELL_CM / 100.0));
-    // _currYWebots = (int16_t)std::round(relativeYMetres / ((double)CELL_CM / 100.0));
-
     double correctedCompassRad = rawCompassRad + _compassOffset;
-    
+
     _currDirCompass = std::atan2(std::sin(correctedCompassRad), std::cos(correctedCompassRad));
+}
+
+void Navigator::setGyro(Gyroscope *gyro)
+{
+    _gyro = gyro;
 }
 
 void Navigator::setDir(double rad)
 {
-
     std::cout << "_currDirCompass WETBOTS: " << _currDirCompass << std::endl;
 
-    std::cout << "_currDir in nav set to: " << rad << std::endl;
+    if (_gyro != nullptr)
+    {
+        std::cout << "_gyro WETBOTS: " << _gyro->getCurrAngle() << std::endl;
+    }
+
+    std::cout << "_currDir calc from encoders: " << rad << std::endl;
     _currDir = _currDirCompass;
 }
 
 void Navigator::setCurrPos(Pos newPos)
 {
-    //std::cout << "Current position in WEBOTS set to: " << _currXWebots << ":" << _currYWebots << std::endl;
+    // std::cout << "Current position in WEBOTS set to: " << _currXWebots << ":" << _currYWebots << std::endl;
 
     std::cout << "Current position in nav set to: " << newPos.x << ":" << newPos.y << std::endl;
     _currPos = newPos;
@@ -95,7 +94,7 @@ bool Navigator::isFree(int16_t x, int16_t y)
     }
 
     int16_t cellIndex = getPosIndex({x, y});
-    bool free = it->second.cells[cellIndex] > DEFAULT_VAL;
+    bool free = it->second.cells[cellIndex] >= DEFAULT_VAL;
 
     return free;
 }
@@ -138,15 +137,13 @@ void Navigator::sculpt(int16_t targetX, int16_t targetY, SensorType st)
 
     createBlanks({targetX, targetY});
 
-    int p = 2;
-
-    float dis = (calcDistanceBetween(getPos(), {targetX, targetY}) / 10);
-    if (dis > p)
+    float dis = (calcDistanceBetween(getPos(), {targetX, targetY}) / 10); // Serve per evitare che la posizione attuale venga impostata come ostacolo
+    if (dis > PADDING_SCULPT)
     {
-        int xMax = targetX + p;
-        int xMin = targetX - p;
-        int yMax = targetY + p;
-        int yMin = targetY - p;
+        int xMax = targetX + PADDING_SCULPT;
+        int xMin = targetX - PADDING_SCULPT;
+        int yMax = targetY + PADDING_SCULPT;
+        int yMin = targetY - PADDING_SCULPT;
 
         for (int16_t i = xMin; i <= xMax; i++)
         {
@@ -203,7 +200,6 @@ void Navigator::createBlanks(Pos target)
     int16_t sx = (x0 < x1) ? 1 : -1;
     int16_t sy = (y0 < y1) ? 1 : -1;
 
-    // err serve per decidere in quale direzione muoversi
     int16_t err = dX + dY;
 
     Pos lastPos = {0, 0};
@@ -220,6 +216,12 @@ void Navigator::createBlanks(Pos target)
         // // Abbasso il valore celle celle in linea retta con la destinazione e quelle adiacenti ad esse
         // for (int16_t i = 0; i < 9; i++)
         // {
+        //     float dis = (calcDistanceBetween({x0 + pX[i], y0 + pY[i]}, {x1, y1}) / 10);
+        //     // Calcolo la distanza tra la cella attualmente analizzata e la destinazione, se è < del padding mi fermo per non sovrascriverlo
+        //     if (dis <= PADDING_SCULPT) {
+        //         break;
+        //     }
+
         //     Pos cPos = getChunkPos({x0 + pX[i], y0 + pY[i]});
         //     if (currChunk == nullptr || cPos.x != lastPos.x || cPos.y != lastPos.y)
         //     {
@@ -239,6 +241,10 @@ void Navigator::createBlanks(Pos target)
         //         {
         //             currChunk->cells[cellIndex] += BLANK_A;
         //         }
+        //         // else
+        //         // {
+        //         //     currChunk->cells[cellIndex] += std::floor(BLANK_A / 4);
+        //         // }
         //     }
         // }
 
@@ -253,6 +259,13 @@ void Navigator::createBlanks(Pos target)
         int16_t cellIndex = getPosIndex({x0, y0});
         if (cellIndex < CHUNK_DIM && currChunk->cells[cellIndex] <= DEFAULT_VAL)
         {
+            float dis = (calcDistanceBetween({x0, y0}, {x1, y1}) / 10);
+            // Calcolo la distanza tra la cella attualmente analizzata e la destinazione, se è < del padding mi fermo per non sovrascriverlo
+            if (dis <= PADDING_SCULPT)
+            {
+                break;
+            }
+
             if (currChunk->cells[cellIndex] + BLANK_A > 255)
             {
                 currChunk->cells[cellIndex] = 255;
@@ -260,6 +273,10 @@ void Navigator::createBlanks(Pos target)
             else if (currChunk->cells[cellIndex] > THRESHOLD_OBSTACLE)
             {
                 currChunk->cells[cellIndex] += BLANK_A;
+            }
+            else
+            {
+                currChunk->cells[cellIndex] += std::floor(BLANK_A / 10);
             }
         }
 

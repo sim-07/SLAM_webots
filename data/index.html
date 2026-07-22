@@ -113,7 +113,7 @@
         <button id="goToCoord" onclick="sendCoords()" disabled>Go there</button>
 
         <h3 id="messFromEsp">
-            </p>
+        </h3>
     </div>
 
     <script>
@@ -186,6 +186,10 @@
         }
 
         let scaleChunk;
+        let centerMapX;
+        let centerMapY;
+        let centerCanvasX;
+        let centerCanvasY;
         function drawMap() {
             // Trovare coordinate minime e massime
             // Calcolare la scala
@@ -205,8 +209,6 @@
 
             let minChunkX = Infinity, maxChunkX = -Infinity;
             let minChunkY = Infinity, maxChunkY = -Infinity;
-
-
 
             for (let [c, cells] of map) {
                 const [chunkX, chunkY] = c.split(", ").map(Number);
@@ -231,11 +233,10 @@
 
             scaleChunk = Math.min(cw / deltaX, ch / deltaY); // calcola a quanti px corrisponde un chunk (minimo perché altrimenti potrebbe tagliare una parte di mappa: se è più alta che larga ci saranno più celle nel deltaY, quindi ch / deltaY sarà minore)
 
-            let centerMapX = deltaX / 2 + minChunkX;
-            let centerMapY = deltaY / 2 + minChunkY;
-
-            let centerCanvasX = cw / 2;
-            let centerCanvasY = ch / 2;
+            centerMapX = deltaX / 2 + minChunkX;
+            centerMapY = deltaY / 2 + minChunkY;
+            centerCanvasX = cw / 2;
+            centerCanvasY = ch / 2;
 
             for (let [c, cells] of map) {
                 // Trovo quanto dista il chunk corrente dal centro della mappa, moltiplico per la scala per trovare la dimensione in pixel e poi sommo il centro del canvas per centrare la mappa nel canvas
@@ -278,19 +279,20 @@
         }
 
 
-        function getMousePosition(canvas, event) {
-            //TODO aggiustare, pixel in alto a sinistra NON è 0; 0
+        function getMousePosition(canvas, e) {
 
-            // if (!scaleChunk) {
-            //     return;
-            // }
-            // let rect = canvas.getBoundingClientRect();
-            // let x = Math.floor((event.clientX - rect.left) / (scaleChunk / 16));
-            // let y = Math.floor((event.clientY - rect.top) / (scaleChunk / 16));
+            if (!scaleChunk) {
+                return;
+            }
+            let rect = canvas.getBoundingClientRect();
 
-            // let textCoord = document.getElementById("selCoord");
-            // textCoord.textContent = `${x}; ${y}`;
-            // document.getElementById("goToCoord").disabled = false;
+            let x = Math.floor((16 * (e.offsetX - centerCanvasX + centerMapX * scaleChunk)) / scaleChunk);
+            let y = Math.floor((16 * (centerCanvasY - e.offsetY + centerMapY * scaleChunk)) / scaleChunk);
+
+
+            let textCoord = document.getElementById("selCoord");
+            textCoord.textContent = `${x}; ${y}`;
+            document.getElementById("goToCoord").disabled = false;
 
         }
 

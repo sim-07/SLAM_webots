@@ -260,7 +260,7 @@ void RobotMovements::followPath()
 
     turnAngle = normAngle(turnAngle);
 
-    if (abs(turnAngle) > 0.1)
+    if (std::abs(turnAngle) > 0.02)
     {
         stop();
         _leftEnc->reset();
@@ -280,8 +280,6 @@ void RobotMovements::followPath()
 
     for (int i = _currIndexRoute; i < _currentRoute.route.size(); i++)
     {
-        // TODO Sistemare
-
         _currIndexRoute = i;
 
         if (i == _currentRoute.route.size() - 1)

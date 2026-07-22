@@ -4,7 +4,7 @@
 #include <webots/Motor.hpp>
 #include <webots/PositionSensor.hpp>
 #include <webots/DistanceSensor.hpp>
-#include <webots/GPS.hpp>
+#include <webots/Gyro.hpp>
 #include <webots/Compass.hpp>
 
 #include <RobotMovements.h>
@@ -13,8 +13,9 @@
 #include <Connection.h>
 
 #include "Common.h"
+#include <Gyroscope.h>
 
-const float WHEELS_DISTANCE = 12.0;
+const float WHEELS_DISTANCE = 12.2;
 const float WHEELS_RADIUS = 4.0;
 
 int main(int argc, char **argv)
@@ -30,6 +31,7 @@ int main(int argc, char **argv)
     ServoMotor servo;
     LaserSensor ls;
     Ultrasonic ultrasonic;
+    Gyroscope gyroscope;
 
     Encoder leftEnc(WHEELS_RADIUS);
     Encoder rightEnc(WHEELS_RADIUS);
@@ -64,18 +66,15 @@ int main(int argc, char **argv)
 
     webots::Motor *webotsServo = robot->getMotor("servo_motor");
 
-    webots::GPS *gpsWebots = robot->getGPS("gps");
-    if (gpsWebots)
-    {
-        gpsWebots->enable(timeStep);
-    }
-    else
-    {
-        std::cout << "Error gps" << std::endl;
-    }
-
     webots::Compass *compass = robot->getCompass("compass");
     compass->enable(timeStep);
+
+    webots::Gyro *gyro = robot->getGyro("gyro");
+    gyro->enable(timeStep);
+
+    gyroscope.init(gyro);
+
+    nav.setGyro(&gyroscope);
 
     bool isLsOk = ls.init(webotsLaser);
 
@@ -100,14 +99,14 @@ int main(int argc, char **argv)
 
     while (robot->step(timeStep) != -1)
     {
-        const double *gpsValues = gpsWebots->getValues();
         const double *compassValues = compass->getValues();
 
-        if (gpsValues != nullptr && compassValues != nullptr)
+        if (compassValues != nullptr)
         {
-            nav.updateGps(gpsValues, compassValues);
+            nav.updateCompass(compassValues);
         }
 
+        gyroscope.update(timeStep);
         explorer.update();
         rb.update();
     }
