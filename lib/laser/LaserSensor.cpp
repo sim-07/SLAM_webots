@@ -17,12 +17,14 @@ bool LaserSensor::init(webots::DistanceSensor* webotsSensor) {
     return true;
 }
 
-float LaserSensor::getDistance() {
+double LaserSensor::getDistance() {
     if (!_status || _webotsSensor == nullptr) return -1.0f;
 
-    double distanceInMeters = _webotsSensor->getValue();
+    double distance = _webotsSensor->getValue() * 100.0;
 
-    return static_cast<float>(distanceInMeters * 100.0);
+    if (distance <= MIN_DISTANCE || distance >= MAX_DISTANCE) return 0.0f;
+
+    return distance;
 }
 
 bool LaserSensor::isReady() {

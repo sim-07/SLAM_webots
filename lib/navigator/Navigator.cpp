@@ -63,14 +63,14 @@ void Navigator::setGyro(Gyroscope *gyro)
 
 void Navigator::setDir(double rad)
 {
-    std::cout << "_currDirCompass WETBOTS: " << _currDirCompass << std::endl;
+    //std::cout << "_currDirCompass WETBOTS: " << _currDirCompass << std::endl;
 
     if (_gyro != nullptr)
     {
-        std::cout << "_gyro WETBOTS: " << _gyro->getCurrAngle() << std::endl;
+        //std::cout << "_gyro WETBOTS: " << _gyro->getCurrAngle() << std::endl;
     }
 
-    std::cout << "_currDir calc from encoders: " << rad << std::endl;
+    //std::cout << "_currDir calc from encoders: " << rad << std::endl;
     _currDir = _currDirCompass;
 }
 
@@ -78,25 +78,8 @@ void Navigator::setCurrPos(Pos newPos)
 {
     // std::cout << "Current position in WEBOTS set to: " << _currXWebots << ":" << _currYWebots << std::endl;
 
-    std::cout << "Current position in nav set to: " << newPos.x << ":" << newPos.y << std::endl;
+    //std::cout << "Current position in nav set to: " << newPos.x << ":" << newPos.y << std::endl;
     _currPos = newPos;
-}
-
-bool Navigator::isFree(int16_t x, int16_t y)
-{
-    Pos p = getChunkPos({x, y});
-
-    auto it = _map.find(p);
-
-    if (it == _map.end())
-    {
-        return false;
-    }
-
-    int16_t cellIndex = getPosIndex({x, y});
-    bool free = it->second.cells[cellIndex] > DEFAULT_VAL;
-
-    return free;
 }
 
 const std::map<Pos, Chunk> &Navigator::getMap() const
@@ -158,7 +141,7 @@ void Navigator::sculpt(int16_t targetX, int16_t targetY, SensorType st)
                 {
                     currChunk.cells[cellIndex] = 0;
                 }
-                else if (currChunk.cells[cellIndex] > THRESHOLD_OBSTACLE)
+                else// if (currChunk.cells[cellIndex] > THRESHOLD_OBSTACLE)
                 {
                     currChunk.cells[cellIndex] -= v;
                 }
@@ -211,10 +194,10 @@ void Navigator::createBlanks(Pos target)
         if (x0 == x1 && y0 == y1)
             break;
 
-        // int16_t pX[] = {-1, 1, 0, 0, 0, -1, -1, 1, 1};
-        // int16_t pY[] = {0, 0, 1, -1, 0, 1, -1, 1, -1};
+        // int16_t pX[] = {-1, 1, 0, 0};
+        // int16_t pY[] = {0, 0, 1, -1};
         // // Abbasso il valore celle celle in linea retta con la destinazione e quelle adiacenti ad esse
-        // for (int16_t i = 0; i < 9; i++)
+        // for (int16_t i = 0; i < 4; i++)
         // {
         //     float dis = (calcDistanceBetween({x0 + pX[i], y0 + pY[i]}, {x1, y1}) / 10);
         //     // Calcolo la distanza tra la cella attualmente analizzata e la destinazione, se è < del padding mi fermo per non sovrascriverlo
@@ -241,10 +224,10 @@ void Navigator::createBlanks(Pos target)
         //         {
         //             currChunk->cells[cellIndex] += BLANK_A;
         //         }
-        //         // else
-        //         // {
-        //         //     currChunk->cells[cellIndex] += std::floor(BLANK_A / 4);
-        //         // }
+        //         else
+        //         {
+        //             currChunk->cells[cellIndex] += std::floor(BLANK_A / 2);
+        //         }
         //     }
         // }
 
@@ -270,13 +253,9 @@ void Navigator::createBlanks(Pos target)
             {
                 currChunk->cells[cellIndex] = 255;
             }
-            else if (currChunk->cells[cellIndex] > THRESHOLD_OBSTACLE)
-            {
-                currChunk->cells[cellIndex] += BLANK_A;
-            }
             else
             {
-                currChunk->cells[cellIndex] += std::floor(BLANK_A / 10);
+                currChunk->cells[cellIndex] += BLANK_A;
             }
         }
 
@@ -297,6 +276,23 @@ void Navigator::createBlanks(Pos target)
 }
 
 ///////////////////////// A* /////////////////////////
+
+bool Navigator::isFree(int16_t x, int16_t y)
+{
+    Pos p = getChunkPos({x, y});
+
+    auto it = _map.find(p);
+
+    if (it == _map.end())
+    {
+        return false;
+    }
+
+    int16_t cellIndex = getPosIndex({x, y});
+    bool free = it->second.cells[cellIndex] > DEFAULT_VAL;
+
+    return free;
+}
 
 bool isDestination(int16_t row, int16_t col, Pos dest)
 {

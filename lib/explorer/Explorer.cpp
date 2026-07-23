@@ -101,18 +101,18 @@ void Explorer::update()
             Pos closestBorder = findClosestBorder(_nav->getPos());
             deleteBorder(closestBorder);
 
-            if (closestBorder.x == _nav->getPos().x && closestBorder.y == _nav->getPos().y)
-            {
-                std::cout << "closestBorder.x == _nav->getPos().x && closestBorder.y == _nav->getPos().y" << std::endl;
-                Route r;
-                r.numSteps = 1;
-                r.turnAngle = 3.14159;
+            // if (closestBorder.x == _nav->getPos().x && closestBorder.y == _nav->getPos().y)
+            // {
+            //     std::cout << "closestBorder.x == _nav->getPos().x && closestBorder.y == _nav->getPos().y" << std::endl;
+            //     Route r;
+            //     r.numSteps = 1;
+            //     r.turnAngle = 3.14159;
 
-                _rb->setRoute(r);
-                _rb->setCurrentState(FOLLOWING);
-                setCurrentState(FOLLOWING_F);
-                return;
-            }
+            //     _rb->setRoute(r);
+            //     _rb->setCurrentState(FOLLOWING);
+            //     setCurrentState(FOLLOWING_F);
+            //     return;
+            // }
 
             std::cout << "Calculating route for " << closestBorder.x << ":" << closestBorder.y << std::endl;
             Route routeFrontier = _nav->calcRoute({closestBorder.x, closestBorder.y});
@@ -198,12 +198,12 @@ void Explorer::scan()
 {
     if (_currScanPoint <= _servo->MAX_ANGLE && _currScanPoint >= _servo->MIN_ANGLE)
     {
-        std::cout << "Scanning angle: " << _currScanPoint << std::endl;
+        //std::cout << "Scanning angle: " << _currScanPoint << std::endl;
         _servo->moveToAngleFast(_currScanPoint);
 
         if (_currDelayState == INITSTATE)
         {
-            _delay = 5;
+            _delay = 6;
             _currDelayState = AWAITING;
             return;
         }
@@ -238,8 +238,8 @@ void Explorer::scan()
 
 void Explorer::searchObstacles()
 {
-    float laserDis = -1;
-    float ultrasonicDis = -1;
+    double laserDis = -1;
+    double ultrasonicDis = -1;
     double servoAngle = _servo->getAngle();
     double robotAngle = _nav->getDir();
     double totAngle = normAngle(servoAngle + robotAngle);
@@ -250,29 +250,18 @@ void Explorer::searchObstacles()
     {
         laserDis = _laser->getDistance();
 
-        if (laserDis > 1000)
-        {
-            std::cout << "Too much laserDis: " << laserDis << std::endl;
-        }
-        else
+        if (laserDis > 0)
         {
             Pos cLaser = calcCoordinates(p, laserDis, totAngle);
             _nav->sculpt(cLaser.x, cLaser.y, Navigator::LASER);
-
-            // std::cout << "laserDis: " << laserDis << " Sculpted coords: " << cLaser.x << ":" << cLaser.y << std::endl;
         }
     }
 
     ultrasonicDis = _ultrasonic->getDistance();
 
-    if (ultrasonicDis > 1000)
-    {
-        std::cout << "Too much ultrasonicDis: " << ultrasonicDis << std::endl;
-    }
-    else
+    if (ultrasonicDis > 0)
     {
         Pos cUltrasonic = calcCoordinates(p, ultrasonicDis, totAngle);
-        // std::cout << "ultrasonicDis: " << ultrasonicDis << " Sculpted coords: " << cUltrasonic.x << ":" << cUltrasonic.y << std::endl;
         _nav->sculpt(cUltrasonic.x, cUltrasonic.y, Navigator::ULTRASONIC);
     }
 }
@@ -406,8 +395,8 @@ void Explorer::findBorder()
                 if (!_bordersToExplore.empty())
                 {
                     Pos closBorder = findClosestBorder(foundBorder);
-                    int distance = _nav->calcDistanceBetween(closBorder, foundBorder);
-                    if (distance < 40)
+                    int distance = std::floor(_nav->calcDistanceBetween(closBorder, foundBorder) / 10);
+                    if (distance < 4)
                     {
                         // std::cout << "Distance too short (" << distance
                         //           << ") between last border (" << closBorder.x << ":" << closBorder.y

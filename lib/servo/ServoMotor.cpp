@@ -7,12 +7,12 @@ void ServoMotor::init(webots::Motor* webotsServo) {
     std::cout << "Init servo in Webots" << std::endl;
 
     _webotsServo = webotsServo;
-    _currentAngle = MIN_ANGLE;
 
     if (_webotsServo != nullptr) {
-        _webotsServo->setVelocity(1.5);
-        
+        _webotsServo->setVelocity(VELOCITY);
         _webotsServo->setPosition(MIN_ANGLE);
+    } else {
+        std::cout << "Servo nullptr" << std::endl;
     }
 }
 
@@ -20,7 +20,7 @@ void ServoMotor::moveToAngleFast(double angle) {
     if (_webotsServo == nullptr) return;
 
     angle = std::clamp(angle, MIN_ANGLE, MAX_ANGLE);
-    _currentAngle = angle;
-
+    
     _webotsServo->setPosition(angle);
+    _currentAngle = angle;
 }

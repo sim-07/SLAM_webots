@@ -15,7 +15,7 @@
 #include "Common.h"
 #include <Gyroscope.h>
 
-const float WHEELS_DISTANCE = 12.2;
+const float WHEELS_DISTANCE = 12.0;
 const float WHEELS_RADIUS = 4.0;
 
 int main(int argc, char **argv)

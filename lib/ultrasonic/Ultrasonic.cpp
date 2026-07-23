@@ -18,17 +18,15 @@ bool Ultrasonic::init(webots::DistanceSensor* webotsUS)
     return true;
 }
 
-float Ultrasonic::getDistance()
+double Ultrasonic::getDistance()
 {
     if (!_status || _webotsUS == nullptr) return -1.0f;
 
-    double distanceInMeters = _webotsUS->getValue();
-    float distanceInCm = static_cast<float>(distanceInMeters * 100.0);
+    double distance = _webotsUS->getValue() * 100.0;
 
-    if (distanceInCm < MIN_DISTANCE) return static_cast<float>(MIN_DISTANCE);
-    if (distanceInCm > MAX_DISTANCE) return static_cast<float>(MAX_DISTANCE);
+    if (distance <= MIN_DISTANCE || distance >= MAX_DISTANCE) return 0.0f;
 
-    return distanceInCm;
+    return distance;
 }
 
 bool Ultrasonic::test() 

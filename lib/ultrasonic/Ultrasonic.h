@@ -4,23 +4,23 @@
 #include <webots/DistanceSensor.hpp>
 #include <cstdint>
 
-static const uint8_t MIN_DISTANCE = 2;
-static const int MAX_DISTANCE = 400;
-
 class Ultrasonic
 {
-    private:
-        webots::DistanceSensor* _webotsUS = nullptr;
-        bool _status = false;
-        
-        bool test();
+private:
+    webots::DistanceSensor *_webotsUS = nullptr;
+    bool _status = false;
 
-    public:
-        // Costruttore di default
-        Ultrasonic() : _status(false) {}
+    bool test();
 
-        bool init(webots::DistanceSensor* webotsUS);
-        float getDistance();
+    static const int MIN_DISTANCE = 2;
+    static const int MAX_DISTANCE = 400;
+
+public:
+    // Costruttore di default
+    Ultrasonic() : _status(false) {}
+
+    bool init(webots::DistanceSensor *webotsUS);
+    double getDistance();
 };
 
 #endif

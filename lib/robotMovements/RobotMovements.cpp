@@ -85,7 +85,7 @@ void RobotMovements::setRoute(Route &route)
 
 void RobotMovements::setCurrentState(RbState currState)
 {
-    std::cout << "Current state rb: " << currState << std::endl;
+    //std::cout << "Current state rb: " << currState << std::endl;
     _currentState = currState;
 }
 
@@ -100,7 +100,7 @@ void RobotMovements::goStraight()
     if (_avgStraight < abs(_targetDis))
     {
 
-        std::cout << "Moving forward in rb: _avgStraight: " << _avgStraight << " abs(_targetDis): " << abs(_targetDis) << std::endl;
+        //std::cout << "Moving forward in rb: _avgStraight: " << _avgStraight << " abs(_targetDis): " << abs(_targetDis) << std::endl;
 
         float error = dL - dR;
 
@@ -156,7 +156,7 @@ void RobotMovements::turn()
         float powerReducer = POWER_REDUCE_CONSTANT / (turnDis - _avgTurn);
         float motorPower = MOTOR_POWER - powerReducer > MIN_MOTOR_POWER ? MOTOR_POWER - powerReducer : MIN_MOTOR_POWER;
 
-        std::cout << "Turning in rb: _avgTurn: " << _avgTurn << " | turnDis: " << turnDis << " | motorPower: " << motorPower << std::endl;
+        //std::cout << "Turning in rb: _avgTurn: " << _avgTurn << " | turnDis: " << turnDis << " | motorPower: " << motorPower << std::endl;
 
         float error = abs_dis_l - abs_dis_r;
 
@@ -182,7 +182,7 @@ void RobotMovements::turn()
         _rightEnc->reset();
         double realAngle = normAngle(_nav->getDir() + (_avgTurn / (_wheelDistance / 2.0f)) * -dir);
         _nav->setDir(realAngle);
-        std::cout << "Finished turning, _avgTurn: " << _avgTurn << std::endl;
+        //std::cout << "Finished turning, _avgTurn: " << _avgTurn << std::endl;
         _targetRad = 0;
         _avgTurn = 0;
         setCurrentState(FOLLOWING);
@@ -205,40 +205,33 @@ void RobotMovements::turn()
 
 void RobotMovements::followPath()
 {
-    std::cout << "Inside followPath() rb" << std::endl;
-    if (_currentRoute.numSteps == 1 && _currentRoute.turnAngle > 0)
-    {
-        std::cout << "_currentRoute.numSteps == 1 && _currentRoute.turnAngle > 0 in rb" << std::endl;
-        if (std::abs(normAngle(_currentRoute.turnAngle - _nav->getDir())) < TURN_TOLERANCE)
-        {
-            std::cout << "COMPLETED_ROUTE" << std::endl;
-            setCurrentState(COMPLETED_ROUTE);
-            return;
-        }
-        else
-        {
-            stop();
-            _leftEnc->reset();
-            _rightEnc->reset();
-            _avgTurn = 0;
-            _targetRad = _currentRoute.turnAngle;
-            _currIndexRoute++;
-            setCurrentState(TURNING);
-            return;
-        }
-    }
-
-    // if (_nav->getPos().x == _currentRoute.route[_currentRoute.route.size() - 1].x && _nav->getPos().y == _currentRoute.route[_currentRoute.route.size() - 1].y) {
-    //     std::cout << "Completed route rb" << std::endl;
-    //     std::cout << "COMPLETED_ROUTE" << std::endl;
-    //     setCurrentState(COMPLETED_ROUTE);
-    //     return;
+    //std::cout << "Inside followPath() rb" << std::endl;
+    // if (_currentRoute.numSteps == 1 && _currentRoute.turnAngle > 0)
+    // {
+    //     std::cout << "_currentRoute.numSteps == 1 && _currentRoute.turnAngle > 0 in rb" << std::endl;
+    //     if (std::abs(normAngle(_currentRoute.turnAngle - _nav->getDir())) < TURN_TOLERANCE)
+    //     {
+    //         std::cout << "COMPLETED_ROUTE" << std::endl;
+    //         setCurrentState(COMPLETED_ROUTE);
+    //         return;
+    //     }
+    //     else
+    //     {
+    //         stop();
+    //         _leftEnc->reset();
+    //         _rightEnc->reset();
+    //         _avgTurn = 0;
+    //         _targetRad = _currentRoute.turnAngle;
+    //         _currIndexRoute++;
+    //         setCurrentState(TURNING);
+    //         return;
+    //     }
     // }
 
     if (_currentRoute.route.size() > _currIndexRoute)
     {
         _nextCell = _currentRoute.route[_currIndexRoute];
-        std::cout << "Robot in: " << _nav->getPos().x << ":" << _nav->getPos().y << ". Next cell is: " << _nextCell.x << ":" << _nextCell.y << std::endl;
+        //std::cout << "Robot in: " << _nav->getPos().x << ":" << _nav->getPos().y << ". Next cell is: " << _nextCell.x << ":" << _nextCell.y << std::endl;
     }
     else
     {
@@ -278,7 +271,7 @@ void RobotMovements::followPath()
     bool isDiagonal = _nextCell.x != currPos.x && _nextCell.y != currPos.y;
     float straightDis = 0;
 
-    std::cout << "Before for in followPath() rb: " << "_currIndexRoute: " << _currIndexRoute << " _currentRoute.route.size(): " << _currentRoute.route.size() << std::endl;
+    //std::cout << "Before for in followPath() rb: " << "_currIndexRoute: " << _currIndexRoute << " _currentRoute.route.size(): " << _currentRoute.route.size() << std::endl;
 
     for (int i = _currIndexRoute; i < _currentRoute.route.size(); i++)
     {
