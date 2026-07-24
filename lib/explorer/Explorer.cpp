@@ -144,7 +144,9 @@ void Explorer::update()
                 std::cout << "_bordersToExplore.size() == 0" << std::endl;
                 _attemptsFindBorders = 0;
                 break;
-            } else {
+            }
+            else
+            {
                 _attemptsFindBorders++;
             }
         }
@@ -198,7 +200,7 @@ void Explorer::scan()
 {
     if (_currScanPoint <= _servo->MAX_ANGLE && _currScanPoint >= _servo->MIN_ANGLE)
     {
-        //std::cout << "Scanning angle: " << _currScanPoint << std::endl;
+        // std::cout << "Scanning angle: " << _currScanPoint << std::endl;
         _servo->moveToAngleFast(_currScanPoint);
 
         if (_currDelayState == INITSTATE)
@@ -346,7 +348,7 @@ void Explorer::findBorder()
                 }
                 else if (chunk.cells[index] == DEFAULT_VAL)
                 { // Cella sconosciuta, trovata possibile frontiera
-                    //std::cout << "It's unknown" << std::endl;
+                    // std::cout << "It's unknown" << std::endl;
                     uint8_t countFrontier = 0;
                     for (uint8_t j = 0; j < 8; j++)
                     { // Analizzo celle adiacenti a quella sconosciuta
@@ -371,7 +373,7 @@ void Explorer::findBorder()
                     if (countFrontier >= 3)
                     {
                         // Se ci sono almeno 3 celle sconosciute adiacenti è una frontiera, restituisco il percorso
-                        //std::cout << "Found frontier: " << nX << ":" << nY << std::endl;
+                        // std::cout << "Found frontier: " << nX << ":" << nY << std::endl;
                         isFrontierFound = true;
                         foundBorder = {currAnalyzedCell.x, currAnalyzedCell.y};
                     }
@@ -392,16 +394,51 @@ void Explorer::findBorder()
 
             if (isFrontierFound)
             {
+                int xMax = foundBorder.x + BORDERS_OBSTACLE_MIN_DISTANCE;
+                int xMin = foundBorder.x - BORDERS_OBSTACLE_MIN_DISTANCE;
+                int yMax = foundBorder.y + BORDERS_OBSTACLE_MIN_DISTANCE;
+                int yMin = foundBorder.y - BORDERS_OBSTACLE_MIN_DISTANCE;
+
+                bool isDistanceFromObOk = true;
+
+                const Chunk *currChunk = nullptr;
+                Pos lastChunkPos;
+                for (int16_t i = xMin; i <= xMax && isDistanceFromObOk; i++)
+                {
+                    for (int16_t j = yMin; j <= yMax && isDistanceFromObOk; j++)
+                    {
+                        Pos cPos = _nav->getChunkPos({i, j});
+                        int16_t cellIndex = _nav->getPosIndex({i, j});
+
+                        if (cPos.x != lastChunkPos.x || cPos.y != lastChunkPos.y)
+                        {
+                            auto it = map.find(cPos);
+                            lastChunkPos = cPos;
+                            
+                            if (it != map.end())
+                            {
+                                currChunk = &it->second;
+                            } else {
+                                currChunk = nullptr;
+                            }
+                        }
+
+                        if (currChunk != nullptr)
+                        {
+                            if (currChunk->cells[cellIndex] < DEFAULT_VAL)
+                            {
+                                isDistanceFromObOk = false;
+                            }
+                        }
+                    }
+                }
+
                 if (!_bordersToExplore.empty())
                 {
                     Pos closBorder = findClosestBorder(foundBorder);
                     int distance = std::floor(_nav->calcDistanceBetween(closBorder, foundBorder) / 10);
-                    if (distance < 4)
+                    if (distance < BORDERS_MIN_DISTANCE)
                     {
-                        // std::cout << "Distance too short (" << distance
-                        //           << ") between last border (" << closBorder.x << ":" << closBorder.y
-                        //           << ") and new border (" << foundBorder.x << ":" << foundBorder.y << ")"
-                        //           << std::endl;
                         continue;
                     }
                 }
