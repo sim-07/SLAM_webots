@@ -15,7 +15,7 @@
 static const double SCAN_PRECISION = 0.0872; // ogni quanti gradi scansiona (5)
 static const int MAX_BORDERS_FOUND = 3;
 static const int BORDERS_MIN_DISTANCE = 4;
-static const int BORDERS_OBSTACLE_MIN_DISTANCE = 4;
+static const int BORDERS_OBSTACLE_MIN_DISTANCE = 3;
 
 
 enum ExpState

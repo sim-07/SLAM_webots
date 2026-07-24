@@ -289,22 +289,11 @@ void Explorer::findBorder()
     int8_t dY[] = {0, 0, 1, -1, 1, -1, 1, -1};
 
     mapOpenList.push_front({currX, currY}); // Inserisco come primo valore la posizione corrente
-    // mapClosedList.insert({currX, currY});
-
-    // if (mapOpenList.empty())
-    // {
-    //     std::cout << "mapOpenList empty" << std::endl;
-    // }
+    mapClosedList.insert({currX, currY});
 
     while (!mapOpenList.empty())
     {
         const auto &map = _nav->getMap();
-
-        if (map.empty())
-        {
-            std::cout << "Map empty" << std::endl;
-            return;
-        }
 
         if (counterMax > maxExp)
         {
@@ -431,6 +420,10 @@ void Explorer::findBorder()
                             }
                         }
                     }
+                }
+
+                if (!isDistanceFromObOk) {
+                    continue;
                 }
 
                 if (!_bordersToExplore.empty())

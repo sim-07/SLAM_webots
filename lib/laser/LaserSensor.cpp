@@ -11,7 +11,7 @@ bool LaserSensor::init(webots::DistanceSensor* webotsSensor) {
 
     _webotsSensor = webotsSensor;
     
-    _webotsSensor->enable(50); 
+    _webotsSensor->enable(32); 
     
     _status = true;
     return true;
